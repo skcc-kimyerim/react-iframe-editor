@@ -217,7 +217,7 @@ $RECYCLE.BIN/
 
 .env
 
-frontend/node_modules
+node_modules
 backend/venv
 backend/dynamic-react-app
-backend/__pycache__
+__pycache__

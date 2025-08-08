@@ -1,11 +1,13 @@
 # FastAPI React Dev Server Requirements
 
 # 핵심 의존성
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
+fastapi>=0.110,<1.0
+uvicorn[standard]>=0.27,<0.30
+httpx>=0.25,<0.28
 
 # 데이터 검증 및 직렬화
-pydantic==2.5.0
+pydantic>=2.7,<3.0
+pydantic-settings>=2.3,<3.0
 
 # 추가 유용한 패키지 (선택사항)
 python-multipart==0.0.6  # 파일 업로드 지원시 필요

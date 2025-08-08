@@ -3,6 +3,8 @@ import Editor from "@monaco-editor/react";
 import { getLanguageFromPath } from "../utils/getLanguageFromPath";
 import { RefreshCcw } from "lucide-react";
 import { TreeView } from "./TreeView";
+import { Chat } from "./Chat";
+import { Panel } from "./Panel";
 
 // Monaco TypeScript 설정: 브라우저 환경에서 모듈 해석이 어려워 생기는
 // 과도한 오류(react 등 모듈을 찾지 못함)를 줄이기 위한 설정
@@ -40,6 +42,7 @@ const ReactEditor = () => {
   const iframeRef = useRef(null);
   const [routePath, setRoutePath] = useState("/");
   const [routeInput, setRouteInput] = useState("/");
+  const [activeRight, setActiveRight] = useState<"code" | "preview">("code");
 
   const API_BASE = "http://localhost:3001/api";
   // routePath가 변경되면 입력값 동기화
@@ -216,6 +219,7 @@ const ReactEditor = () => {
           )}
         </div>
       </div>
+      {/* 본문 레이아웃: 좌측 Chat, 우측 코드/프리뷰 스위치 패널 */}
 
       {/* 에러 표시 */}
       {error && (
@@ -231,192 +235,42 @@ const ReactEditor = () => {
       )}
 
       <div className="flex flex-1 overflow-hidden">
-        {/* 왼쪽 패널: 파일 트리 + 코드 에디터 */}
-        <div className="flex flex-col m-3 rounded-xl overflow-hidden bg-white/5 border border-white/10">
-          <div className="flex justify-between items-center px-4 py-3 border-b border-white/10 bg-white/5">
-            <h2 className="m-0 text-base font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-300 to-cyan-300">
-              Code Editor
-            </h2>
-            <div className="flex gap-2">
-              <button
-                onClick={runFullProcess}
-                disabled={loading}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-sm font-semibold border border-transparent"
-              >
-                {loading ? "⏳ Setting up..." : "🚀 Initialize & Start"}
-              </button>
-
-              <button
-                onClick={updateComponent}
-                disabled={!isServerRunning || !selectedFilePath}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-md text-white bg-green-600 hover:bg-green-700 disabled:opacity-60 text-sm font-semibold border border-transparent"
-              >
-                💾 Save File
-              </button>
-
-              <button
-                onClick={stopDevServer}
-                disabled={!isServerRunning}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-md text-white bg-red-500 hover:bg-red-600 disabled:opacity-60 text-sm font-semibold border border-transparent"
-              >
-                🛑 Stop Server
-              </button>
-            </div>
+        {/* 왼쪽: Chat 패널 */}
+        <div className="w-[360px] m-3 rounded-xl overflow-hidden bg-white/5 border border-white/10 flex flex-col">
+          <div className="px-4 py-3 border-b border-white/10 bg-white/5 font-semibold">
+            Chat
           </div>
-          <div className="flex flex-1 min-h-0">
-            {/* 파일 트리 섹션 */}
-            <div className="w-[280px] border-r border-white/10 flex flex-col bg-white/5">
-              <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 bg-white/5 font-semibold">
-                <span>Files</span>
-                <button
-                  className="px-2 py-1 text-xs rounded-md border border-white/15 text-slate-200 hover:bg-white/10"
-                  onClick={fetchFileTree}
-                  title="Refresh file tree"
-                >
-                  <RefreshCcw size={16} aria-label="Refresh file tree" />
-                </button>
-              </div>
-              <div className="p-2 pb-3 overflow-auto flex-1">
-                {loadingFiles ? (
-                  <div className="text-sm text-slate-400 px-3 py-2">
-                    Loading files...
-                  </div>
-                ) : fileTree.length === 0 ? (
-                  <div className="text-sm text-slate-400 px-3 py-2">
-                    No files
-                  </div>
-                ) : (
-                  <TreeView
-                    nodes={fileTree}
-                    selectedPath={selectedFilePath}
-                    onFileClick={loadFile}
-                  />
-                )}
-              </div>
-            </div>
-
-            {/* 코드 에디터 섹션 */}
-            <div className="flex flex-1 flex-col min-w-0">
-              {/* 라우팅 경로 입력 바 */}
-              <div className="flex items-center gap-2 px-2 py-1.5 border-b border-white/10 bg-white/5">
-                <span className="text-xs opacity-80">Route</span>
-                <input
-                  className="flex-1 bg-[#0f121f] text-white border border-white/10 rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/20"
-                  value={routeInput}
-                  onChange={(e) => setRouteInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      const next = (routeInput || "/").trim();
-                      setRoutePath(next.length === 0 ? "/" : next);
-                    }
-                  }}
-                  onBlur={() => {
-                    const next = (routeInput || "/").trim();
-                    setRoutePath(next.length === 0 ? "/" : next);
-                  }}
-                  placeholder="/"
-                />
-                <button
-                  className="inline-flex items-center px-3 py-1.5 rounded-md text-white bg-indigo-600 hover:bg-indigo-700 text-sm font-semibold"
-                  onClick={() => {
-                    const next = (routeInput || "/").trim();
-                    setRoutePath(next.length === 0 ? "/" : next);
-                  }}
-                  title="Apply route"
-                >
-                  Go
-                </button>
-              </div>
-              <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 bg-white/5 font-mono text-xs text-slate-300">
-                <span>{selectedFilePath || "Select a file from the tree"}</span>
-                {loadingFileContent && <span className="text-cyan-400">●</span>}
-              </div>
-              <div className="flex-1 min-h-0">
-                <Editor
-                  value={code}
-                  onChange={(value) => setCode(value ?? "")}
-                  language={getLanguageFromPath(selectedFilePath)}
-                  beforeMount={configureMonaco}
-                  path={selectedFilePath || "file:///index.tsx"}
-                  theme="vs-dark"
-                  height="100%"
-                  width="100%"
-                  options={{
-                    fontSize: 14,
-                    minimap: { enabled: false },
-                    wordWrap: "on",
-                    automaticLayout: true,
-                    tabSize: 2,
-                    scrollBeyondLastLine: false,
-                  }}
-                />
-              </div>
-            </div>
+          <div className="flex-1 overflow-auto p-3">
+            <Chat />
           </div>
         </div>
 
-        {/* 오른쪽 패널: iframe 프리뷰 */}
-        <div className="flex flex-col m-3 rounded-xl overflow-hidden bg-white/5 border border-white/10">
-          <div className="flex justify-between items-center px-4 py-3 border-b border-white/10 bg-white/5">
-            <h2 className="m-0 text-base font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-300 to-cyan-300">
-              Live Preview
-            </h2>
-            {devServerUrl && (
-              <button
-                onClick={() => {
-                  if (iframeRef.current) {
-                    iframeRef.current.src = buildPreviewUrl(
-                      devServerUrl,
-                      routePath
-                    );
-                  }
-                }}
-                className="px-2 py-1 text-xs rounded-md border border-white/15 text-slate-200 hover:bg-white/10"
-              >
-                <RefreshCcw size={16} aria-label="Refresh preview" />
-              </button>
-            )}
-          </div>
-
-          {devServerUrl ? (
-            <iframe
-              ref={iframeRef}
-              src={buildPreviewUrl(devServerUrl, routePath)}
-              className="w-full h-full flex-1 border-0 bg-[#0b0f1a]"
-              title="React Preview"
-              sandbox="allow-scripts allow-same-origin"
-            />
-          ) : (
-            <div className="flex-1 flex items-center justify-center bg-white/5 text-slate-300 text-center">
-              {loading ? (
-                <div className="flex flex-col items-center gap-5">
-                  <div className="w-10 h-10 border-4 border-white/10 border-t-cyan-400 rounded-full animate-spin"></div>
-                  <p>Starting development server...</p>
-                </div>
-              ) : (
-                <div>
-                  <h3 className="text-slate-100 mb-2">
-                    🎨 Welcome to React Live Editor!
-                  </h3>
-                  <p className="text-base mb-5 text-slate-300">
-                    Click "Initialize & Start" to begin coding
-                  </p>
-                  <div className="flex flex-col gap-2 text-sm">
-                    <div className="inline-block bg-white/10 border border-white/10 px-4 py-2 rounded-full">
-                      ✨ Real-time preview
-                    </div>
-                    <div className="inline-block bg-white/10 border border-white/10 px-4 py-2 rounded-full">
-                      🔄 Hot reload
-                    </div>
-                    <div className="inline-block bg-white/10 border border-white/10 px-4 py-2 rounded-full">
-                      📱 Responsive design
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+        {/* 오른쪽: 코드/프리뷰 전환 패널 */}
+        <Panel
+          activeRight={activeRight}
+          setActiveRight={setActiveRight}
+          code={code}
+          setCode={(v) => setCode(v)}
+          fileTree={fileTree}
+          loadingFiles={loadingFiles}
+          selectedFilePath={selectedFilePath}
+          loadingFileContent={loadingFileContent}
+          devServerUrl={devServerUrl}
+          isServerRunning={isServerRunning}
+          loading={loading}
+          routeInput={routeInput}
+          setRouteInput={setRouteInput}
+          routePath={routePath}
+          setRoutePath={setRoutePath}
+          fetchFileTree={fetchFileTree}
+          loadFile={loadFile}
+          runFullProcess={runFullProcess}
+          updateComponent={updateComponent}
+          stopDevServer={stopDevServer}
+          buildPreviewUrl={buildPreviewUrl}
+          iframeRef={iframeRef}
+          configureMonaco={configureMonaco}
+        />
       </div>
     </div>
   );
