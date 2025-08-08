@@ -1,5 +1,6 @@
-import './App.css';
-import ReactEditor from './components/ReactEditor';
+import "./App.css";
+import "./index.css";
+import ReactEditor from "./components/ReactEditor";
 
 function App() {
   return (

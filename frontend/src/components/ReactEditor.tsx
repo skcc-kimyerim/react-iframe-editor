@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import "./ReactEditor.css";
 import Editor from "@monaco-editor/react";
 import { getLanguageFromPath } from "../utils/getLanguageFromPath";
-import { RefreshCcw, Folder, FolderOpen, File as FileIcon } from "lucide-react";
+import { RefreshCcw } from "lucide-react";
+import { TreeView } from "./TreeView";
 
 // Monaco TypeScript 설정: 브라우저 환경에서 모듈 해석이 어려워 생기는
 // 과도한 오류(react 등 모듈을 찾지 못함)를 줄이기 위한 설정
@@ -25,52 +25,6 @@ const configureMonaco = (monaco) => {
     noSemanticValidation: true,
     noSyntaxValidation: false,
   });
-};
-
-// 간단한 트리뷰 컴포넌트
-const TreeView = ({ nodes, onFileClick, selectedPath, basePath = "" }) => {
-  return (
-    <ul className="tree">
-      {nodes.map((node) => {
-        const fullPath = basePath ? `${basePath}/${node.name}` : node.name;
-        if (node.type === "directory") {
-          return (
-            <li key={fullPath} className="tree-node dir">
-              <details open>
-                <summary>
-                  <span className="icon-folder-closed" aria-hidden>
-                    <Folder className="w-4 h-4 text-blue-500" />
-                  </span>
-                  <span className="icon-folder-open" aria-hidden>
-                    <FolderOpen className="w-4 h-4 text-blue-500" />
-                  </span>
-                  {node.name}
-                </summary>
-                <TreeView
-                  nodes={node.children || []}
-                  onFileClick={onFileClick}
-                  selectedPath={selectedPath}
-                  basePath={fullPath}
-                />
-              </details>
-            </li>
-          );
-        }
-        const isSelected = selectedPath === fullPath;
-        return (
-          <li
-            key={fullPath}
-            className={`tree-node file ${isSelected ? "selected" : ""}`}
-          >
-            <button className="tree-file" onClick={() => onFileClick(fullPath)}>
-              <FileIcon className="w-4 h-4 text-blue-500" />
-              {node.name}
-            </button>
-          </li>
-        );
-      })}
-    </ul>
-  );
 };
 
 const ReactEditor = () => {
@@ -249,36 +203,45 @@ const ReactEditor = () => {
   };
 
   return (
-    <div className="react-editor">
+    <div className="min-h-screen flex flex-col text-slate-200 bg-[#0b0f1a]">
       {/* 상단 툴바 */}
-      <div className="toolbar">
-        <h1>🚀 React Live Editor</h1>
-        <div className="status">
+      <div className="flex justify-between items-center px-5 py-4 border-b border-white/10 bg-white/5 backdrop-blur supports-[backdrop-filter]:bg-white/5">
+        <h1 className="m-0 text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-300 to-cyan-300">
+          🚀 React Live Editor
+        </h1>
+        <div className="flex items-center gap-2 text-indigo-100">
           Status: {isServerRunning ? "🟢 Running" : "🔴 Stopped"}
-          {devServerUrl && <span className="url"> - {devServerUrl}</span>}
+          {devServerUrl && (
+            <span className="text-sm opacity-80"> - {devServerUrl}</span>
+          )}
         </div>
       </div>
 
       {/* 에러 표시 */}
       {error && (
-        <div className="error-banner">
+        <div className="flex justify-between items-center px-4 py-3 border-y border-white/10 bg-red-500/10 text-red-200">
           ⚠️ {error}
-          <button onClick={clearError} className="error-close">
+          <button
+            onClick={clearError}
+            className="text-red-200 hover:text-red-100 text-lg px-1"
+          >
             ×
           </button>
         </div>
       )}
 
-      <div className="main-content">
+      <div className="flex flex-1 overflow-hidden">
         {/* 왼쪽 패널: 파일 트리 + 코드 에디터 */}
-        <div className="editor-panel">
-          <div className="panel-header">
-            <h2>Code Editor</h2>
-            <div className="button-group">
+        <div className="flex flex-col m-3 rounded-xl overflow-hidden bg-white/5 border border-white/10">
+          <div className="flex justify-between items-center px-4 py-3 border-b border-white/10 bg-white/5">
+            <h2 className="m-0 text-base font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-300 to-cyan-300">
+              Code Editor
+            </h2>
+            <div className="flex gap-2">
               <button
                 onClick={runFullProcess}
                 disabled={loading}
-                className="btn btn-primary"
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-sm font-semibold border border-transparent"
               >
                 {loading ? "⏳ Setting up..." : "🚀 Initialize & Start"}
               </button>
@@ -286,7 +249,7 @@ const ReactEditor = () => {
               <button
                 onClick={updateComponent}
                 disabled={!isServerRunning || !selectedFilePath}
-                className="btn btn-success"
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-md text-white bg-green-600 hover:bg-green-700 disabled:opacity-60 text-sm font-semibold border border-transparent"
               >
                 💾 Save File
               </button>
@@ -294,30 +257,34 @@ const ReactEditor = () => {
               <button
                 onClick={stopDevServer}
                 disabled={!isServerRunning}
-                className="btn btn-danger"
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-md text-white bg-red-500 hover:bg-red-600 disabled:opacity-60 text-sm font-semibold border border-transparent"
               >
                 🛑 Stop Server
               </button>
             </div>
           </div>
-          <div className="editor-area">
+          <div className="flex flex-1 min-h-0">
             {/* 파일 트리 섹션 */}
-            <div className="file-tree-section">
-              <div className="file-tree-header">
+            <div className="w-[280px] border-r border-white/10 flex flex-col bg-white/5">
+              <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 bg-white/5 font-semibold">
                 <span>Files</span>
                 <button
-                  className="btn-refresh"
+                  className="px-2 py-1 text-xs rounded-md border border-white/15 text-slate-200 hover:bg-white/10"
                   onClick={fetchFileTree}
                   title="Refresh file tree"
                 >
                   <RefreshCcw size={16} aria-label="Refresh file tree" />
                 </button>
               </div>
-              <div className="file-tree">
+              <div className="p-2 pb-3 overflow-auto flex-1">
                 {loadingFiles ? (
-                  <div className="tree-loading">Loading files...</div>
+                  <div className="text-sm text-slate-400 px-3 py-2">
+                    Loading files...
+                  </div>
                 ) : fileTree.length === 0 ? (
-                  <div className="tree-empty">No files</div>
+                  <div className="text-sm text-slate-400 px-3 py-2">
+                    No files
+                  </div>
                 ) : (
                   <TreeView
                     nodes={fileTree}
@@ -329,21 +296,12 @@ const ReactEditor = () => {
             </div>
 
             {/* 코드 에디터 섹션 */}
-            <div className="editor-section">
+            <div className="flex flex-1 flex-col min-w-0">
               {/* 라우팅 경로 입력 바 */}
-              <div
-                className="route-bar"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "6px 8px",
-                  borderBottom: "1px solid #2a2a2a",
-                }}
-              >
-                <span style={{ fontSize: 12, opacity: 0.8 }}>Route</span>
+              <div className="flex items-center gap-2 px-2 py-1.5 border-b border-white/10 bg-white/5">
+                <span className="text-xs opacity-80">Route</span>
                 <input
-                  className="route-input"
+                  className="flex-1 bg-[#0f121f] text-white border border-white/10 rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/20"
                   value={routeInput}
                   onChange={(e) => setRouteInput(e.target.value)}
                   onKeyDown={(e) => {
@@ -357,18 +315,9 @@ const ReactEditor = () => {
                     setRoutePath(next.length === 0 ? "/" : next);
                   }}
                   placeholder="/"
-                  style={{
-                    flex: 1,
-                    background: "#1e1e1e",
-                    color: "#fff",
-                    border: "1px solid #3a3a3a",
-                    borderRadius: 4,
-                    padding: "6px 8px",
-                    fontSize: 12,
-                  }}
                 />
                 <button
-                  className="btn btn-primary"
+                  className="inline-flex items-center px-3 py-1.5 rounded-md text-white bg-indigo-600 hover:bg-indigo-700 text-sm font-semibold"
                   onClick={() => {
                     const next = (routeInput || "/").trim();
                     setRoutePath(next.length === 0 ? "/" : next);
@@ -378,13 +327,11 @@ const ReactEditor = () => {
                   Go
                 </button>
               </div>
-              <div className="selected-file-bar">
-                <span className="selected-file-path">
-                  {selectedFilePath || "Select a file from the tree"}
-                </span>
-                {loadingFileContent && <span className="loading-dot">●</span>}
+              <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 bg-white/5 font-mono text-xs text-slate-300">
+                <span>{selectedFilePath || "Select a file from the tree"}</span>
+                {loadingFileContent && <span className="text-cyan-400">●</span>}
               </div>
-              <div className="code-editor-wrapper">
+              <div className="flex-1 min-h-0">
                 <Editor
                   value={code}
                   onChange={(value) => setCode(value ?? "")}
@@ -409,9 +356,11 @@ const ReactEditor = () => {
         </div>
 
         {/* 오른쪽 패널: iframe 프리뷰 */}
-        <div className="preview-panel">
-          <div className="panel-header">
-            <h2>Live Preview</h2>
+        <div className="flex flex-col m-3 rounded-xl overflow-hidden bg-white/5 border border-white/10">
+          <div className="flex justify-between items-center px-4 py-3 border-b border-white/10 bg-white/5">
+            <h2 className="m-0 text-base font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-300 to-cyan-300">
+              Live Preview
+            </h2>
             {devServerUrl && (
               <button
                 onClick={() => {
@@ -422,7 +371,7 @@ const ReactEditor = () => {
                     );
                   }
                 }}
-                className="btn-refresh"
+                className="px-2 py-1 text-xs rounded-md border border-white/15 text-slate-200 hover:bg-white/10"
               >
                 <RefreshCcw size={16} aria-label="Refresh preview" />
               </button>
@@ -433,25 +382,35 @@ const ReactEditor = () => {
             <iframe
               ref={iframeRef}
               src={buildPreviewUrl(devServerUrl, routePath)}
-              className="preview-iframe"
+              className="w-full h-full flex-1 border-0 bg-[#0b0f1a]"
               title="React Preview"
               sandbox="allow-scripts allow-same-origin"
             />
           ) : (
-            <div className="preview-placeholder">
+            <div className="flex-1 flex items-center justify-center bg-white/5 text-slate-300 text-center">
               {loading ? (
-                <div className="loading">
-                  <div className="spinner"></div>
+                <div className="flex flex-col items-center gap-5">
+                  <div className="w-10 h-10 border-4 border-white/10 border-t-cyan-400 rounded-full animate-spin"></div>
                   <p>Starting development server...</p>
                 </div>
               ) : (
-                <div className="welcome-message">
-                  <h3>🎨 Welcome to React Live Editor!</h3>
-                  <p>Click "Initialize & Start" to begin coding</p>
-                  <div className="features">
-                    <div>✨ Real-time preview</div>
-                    <div>🔄 Hot reload</div>
-                    <div>📱 Responsive design</div>
+                <div>
+                  <h3 className="text-slate-100 mb-2">
+                    🎨 Welcome to React Live Editor!
+                  </h3>
+                  <p className="text-base mb-5 text-slate-300">
+                    Click "Initialize & Start" to begin coding
+                  </p>
+                  <div className="flex flex-col gap-2 text-sm">
+                    <div className="inline-block bg-white/10 border border-white/10 px-4 py-2 rounded-full">
+                      ✨ Real-time preview
+                    </div>
+                    <div className="inline-block bg-white/10 border border-white/10 px-4 py-2 rounded-full">
+                      🔄 Hot reload
+                    </div>
+                    <div className="inline-block bg-white/10 border border-white/10 px-4 py-2 rounded-full">
+                      📱 Responsive design
+                    </div>
                   </div>
                 </div>
               )}
