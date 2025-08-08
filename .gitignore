@@ -218,5 +218,5 @@ $RECYCLE.BIN/
 .env
 
 frontend/node_modules
-backend/node_modules
+backend/venv
 backend/dynamic-react-app
