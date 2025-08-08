@@ -220,3 +220,4 @@ $RECYCLE.BIN/
 frontend/node_modules
 backend/venv
 backend/dynamic-react-app
+backend/__pycache__

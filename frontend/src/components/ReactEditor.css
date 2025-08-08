@@ -2,7 +2,8 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+    sans-serif;
   background-color: #f8f9fa;
 }
 
@@ -189,7 +190,7 @@
 /* 코드 에디터 */
 .code-editor {
   flex: 1;
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
   font-size: 14px;
   border: none;
   padding: 20px;
@@ -282,6 +283,127 @@
   100% {
     transform: rotate(360deg);
   }
+}
+
+/* Monaco Editor wrapper to fill available space */
+.code-editor-wrapper {
+  flex: 1;
+  min-height: 0;
+}
+
+/* 파일 트리 + 에디터 레이아웃 */
+.editor-area {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.file-tree-section {
+  width: 280px;
+  border-right: 1px solid #e9ecef;
+  display: flex;
+  flex-direction: column;
+  background: #fafafa;
+}
+
+.file-tree-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e9ecef;
+  background: #f6f7f9;
+  font-weight: 600;
+}
+
+.file-tree {
+  padding: 8px 8px 12px 8px;
+  overflow: auto;
+  flex: 1;
+}
+
+ul.tree {
+  list-style: none;
+  padding-left: 12px;
+  margin: 0;
+}
+
+.tree-node {
+  margin: 2px 0;
+}
+
+.tree-node.dir summary {
+  cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tree-node.file .tree-file {
+  background: transparent;
+  border: none;
+  padding: 4px 6px;
+  cursor: pointer;
+  text-align: left;
+  border-radius: 4px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tree-node.file .tree-file:hover {
+  background: #e9f2ff;
+}
+
+.tree-node.file.selected .tree-file {
+  background: #cfe5ff;
+}
+
+/* details 열림/닫힘에 따라 폴더 아이콘 표시 제어 */
+.icon-folder-open {
+  display: none;
+}
+.tree-node.dir details[open] .icon-folder-closed {
+  display: none;
+}
+.tree-node.dir details[open] .icon-folder-open {
+  display: inline-flex;
+}
+
+.tree-loading,
+.tree-empty {
+  font-size: 0.9rem;
+  color: #6c757d;
+  padding: 8px 12px;
+}
+
+.editor-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.selected-file-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e9ecef;
+  background: #f8f9fa;
+  font-family: Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+    monospace;
+  font-size: 12px;
+}
+
+.selected-file-path {
+  color: #495057;
+}
+
+.loading-dot {
+  color: #007bff;
 }
 
 @keyframes slideDown {
