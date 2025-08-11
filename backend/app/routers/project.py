@@ -38,19 +38,27 @@ async def init_project(request: ProjectInitRequest):
             "name": "dynamic-react-app",
             "version": "0.1.0",
             "private": True,
+            "type": "module",
             "dependencies": {
                 "react": "^18.2.0",
                 "react-dom": "^18.2.0",
-                "react-scripts": "^5.0.1",
                 "react-router-dom": "^6.23.0",
-                "typescript": "^5.5.0",
-                "@types/react": "^18.2.0",
-                "@types/react-dom": "^18.2.0",
                 **request.dependencies,
             },
+            "devDependencies": {
+                "@types/react": "^18.2.0",
+                "@types/react-dom": "^18.2.0",
+                "@vitejs/plugin-react": "^4.2.1",
+                "typescript": "^5.5.0",
+                "vite": "^5.1.4",
+                "tailwindcss": "^3.4.17",
+                "autoprefixer": "^10.4.21",
+                "postcss": "^8.5.6"
+            },
             "scripts": {
-                "start": "react-scripts start",
-                "build": "react-scripts build",
+                "dev": "vite",
+                "build": "vite build",
+                "preview": "vite preview"
             },
             "eslintConfig": {"extends": ["react-app", "react-app/jest"]},
             "browserslist": {
@@ -74,40 +82,90 @@ async def init_project(request: ProjectInitRequest):
         (project_path / "src").mkdir(exist_ok=True)
         (project_path / "public").mkdir(exist_ok=True)
 
-        # App.jsx 생성
-        (project_path / "src" / "App.jsx").write_text(request.componentCode, encoding="utf-8")
+        # App.tsx 생성
+        (project_path / "src" / "App.tsx").write_text(request.componentCode, encoding="utf-8")
 
-        # index.js 생성
-        index_js = (
-            """
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App';
+        # main.tsx 생성 (Vite는 main.tsx 사용)
+        main_tsx = """import React from 'react'
+import ReactDOM from 'react-dom/client'
+import './index.css'
+import App from './App.tsx'
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
-"""
-        ).strip()
-        (project_path / "src" / "index.js").write_text(index_js, encoding="utf-8")
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+)"""
+        (project_path / "src" / "main.tsx").write_text(main_tsx, encoding="utf-8")
 
-        # public/index.html 생성
-        index_html = (
-            """
-<!DOCTYPE html>
-<html lang=\"ko\">
-<head>
-  <meta charset=\"utf-8\" />
-  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
-  <title>Dynamic React App</title>
+        # index.html 생성 (Vite는 루트에 위치)
+        index_html = """<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dynamic React App</title>
   </head>
-<body>
-  <div id=\"root\"></div>
-</body>
-</html>
-"""
-        ).strip()
-        (project_path / "public" / "index.html").write_text(index_html, encoding="utf-8")
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>"""
+        (project_path / "index.html").write_text(index_html, encoding="utf-8")
 
+        # vite.config.js 생성
+        vite_config = """import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 3002,
+    host: true
+  }
+})"""
+        (project_path / "vite.config.js").write_text(vite_config, encoding="utf-8")
+
+        # tailwind.config.js 생성
+        tailwind_config = """/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}"""
+        (project_path / "tailwind.config.js").write_text(tailwind_config, encoding="utf-8")
+
+        # postcss.config.js 생성
+        postcss_config = """export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+}"""
+        (project_path / "postcss.config.js").write_text(postcss_config, encoding="utf-8")
+
+        # src/index.css 생성 (Tailwind CSS imports 포함)
+        index_css = """@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}"""
+        (project_path / "src" / "index.css").write_text(index_css, encoding="utf-8")
+
+        print(project_path)
         # 의존성 설치 및 개발 서버 시작
         await react_manager.install_dependencies()
         await react_manager.ensure_typescript_and_router()

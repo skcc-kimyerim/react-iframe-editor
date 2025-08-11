@@ -6,7 +6,17 @@ type Message = { role: Role; content: string };
 
 const API_BASE = "http://localhost:3001/api";
 
-export const Chat: React.FC = () => {
+interface ChatProps {
+  selectedFilePath?: string;
+  fileContent?: string;
+  onFileUpdate?: (filePath: string, content: string) => void;
+}
+
+export const Chat: React.FC<ChatProps> = ({
+  selectedFilePath,
+  fileContent,
+  onFileUpdate,
+}) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -55,11 +65,9 @@ export const Chat: React.FC = () => {
         },
         body: JSON.stringify({
           model: "qwen/qwen3-coder:free",
-          messages: [
-            { role: "system", content: "You are a helpful assistant." },
-            ...messages,
-            userMsg,
-          ],
+          messages: [...messages, userMsg],
+          selectedFile: selectedFilePath,
+          fileContent: fileContent,
         }),
       });
 
@@ -71,6 +79,12 @@ export const Chat: React.FC = () => {
       const data = await res.json();
       const content: string =
         data?.content || "죄송해요, 응답을 생성하지 못했습니다.";
+
+      // 파일 업데이트가 있으면 콜백 호출
+      if (data?.updatedFile && data?.updatedContent && onFileUpdate) {
+        onFileUpdate(data.updatedFile, data.updatedContent);
+      }
+
       setMessages((prev) => [...prev, { role: "assistant", content }]);
     } catch (e: any) {
       console.error(e);
@@ -81,18 +95,21 @@ export const Chat: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col min-h-0">
       {/* 서버 프록시 모드 - 별도 키 입력 불필요 */}
 
       {/* 메시지 목록 */}
-      <div ref={scrollRef} className="flex-1 overflow-auto p-3 space-y-2">
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-5 min-h-0"
+      >
         {messages.map((m, idx) => (
           <div
             key={idx}
             className={
               m.role === "user"
-                ? "ml-auto max-w-[85%] rounded-lg bg-indigo-600/90 text-white px-3 py-2"
-                : "mr-auto max-w-[85%] rounded-lg bg-white/5 text-slate-200 px-3 py-2 border border-white/10"
+                ? "ml-auto max-w-[85%] rounded-lg bg-indigo-600/90 text-white px-3 py-2 break-words whitespace-pre-wrap"
+                : "mr-auto max-w-[85%] rounded-lg bg-white/5 text-slate-200 px-3 py-2 border border-white/10 break-words whitespace-pre-wrap"
             }
           >
             {m.content}
@@ -100,7 +117,7 @@ export const Chat: React.FC = () => {
         ))}
 
         {isSending && (
-          <div className="mr-auto inline-flex items-center gap-2 rounded-lg bg-white/5 text-slate-200 px-3 py-2 border border-white/10">
+          <div className="mr-auto inline-flex items-center gap-2 rounded-lg bg-white/5 text-slate-200 px-3 py-2 border border-white/10 mb-5 max-w-[85%]">
             <span className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse" />
             생각 중...
           </div>
@@ -111,6 +128,13 @@ export const Chat: React.FC = () => {
       {error && (
         <div className="px-3 py-2 text-xs text-red-200 bg-red-500/10 border-t border-red-400/30">
           {error}
+        </div>
+      )}
+
+      {/* 선택된 파일 표시 */}
+      {selectedFilePath && (
+        <div className="px-3 py-2 text-xs text-cyan-200 bg-cyan-500/10 border-t border-cyan-400/30">
+          📁 선택된 파일: {selectedFilePath}
         </div>
       )}
 

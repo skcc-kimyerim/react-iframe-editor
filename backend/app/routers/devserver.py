@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from ..services.react_dev_server import react_manager
 from ..core.config import settings
 
-router = APIRouter(tags=["devserver"])
+router = APIRouter(tags=["dev-server"])
 
 
 @router.post("/start-dev-server")

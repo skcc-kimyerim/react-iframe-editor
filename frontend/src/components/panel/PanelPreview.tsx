@@ -17,18 +17,20 @@ export const PanelPreview: React.FC<Props> = ({
 }) => {
   if (devServerUrl) {
     return (
-      <iframe
-        ref={iframeRef}
-        src={buildPreviewUrl(devServerUrl, routePath)}
-        className="w-full h-full flex-1 border-0 bg-[#0b0f1a]"
-        title="React Preview"
-        sandbox="allow-scripts allow-same-origin"
-      />
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <iframe
+          ref={iframeRef}
+          src={buildPreviewUrl(devServerUrl, routePath)}
+          className="w-full h-full border-0 bg-[#0b0f1a]"
+          title="React Preview"
+          sandbox="allow-scripts allow-same-origin"
+        />
+      </div>
     );
   }
 
   return (
-    <div className="flex-1 flex items-center justify-center bg-white/5 text-slate-300 text-center">
+    <div className="flex-1 flex items-center justify-center bg-white/5 text-slate-300 text-center min-h-0 overflow-y-auto">
       {loading ? (
         <div className="flex flex-col items-center gap-5">
           <div className="w-10 h-10 border-4 border-white/10 border-t-cyan-400 rounded-full animate-spin"></div>

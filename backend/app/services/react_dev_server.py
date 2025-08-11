@@ -51,6 +51,9 @@ class ReactDevServerManager:
 
     def _is_package_installed(self, package_name: str) -> bool:
         return (self.project_path / "node_modules" / package_name / "package.json").exists()
+    
+    def _is_vite_installed(self) -> bool:
+        return (self.project_path / "node_modules" / "vite" / "package.json").exists()
 
     async def ensure_typescript_and_router(self) -> None:
         needs_ts = self._project_uses_typescript()
@@ -92,22 +95,22 @@ class ReactDevServerManager:
     async def start(self) -> None:
         if self.is_running():
             return
-        scripts_installed = (self.project_path / "node_modules" / "react-scripts" / "package.json").exists()
-        if not scripts_installed:
+        vite_installed = self._is_vite_installed()
+        if not vite_installed:
             await self.install_dependencies()
         await self.ensure_typescript_and_router()
 
         npm_command = "npm.cmd" if platform.system() == "Windows" else "npm"
         env = os.environ.copy()
         env.update({
-            "PORT": str(self.port),
             "BROWSER": "none",
             "CI": "true",
         })
 
         self._process = await asyncio.create_subprocess_exec(
             npm_command,
-            "start",
+            "run",
+            "dev",
             cwd=self.project_path,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
