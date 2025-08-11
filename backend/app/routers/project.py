@@ -84,7 +84,7 @@ async def init_project(request: ProjectInitRequest):
         (project_path / "public").mkdir(exist_ok=True)
 
         # App.tsx 생성 - 기본 템플릿이 없으면 React Router 예시 코드 사용
-        app_code = request.componentCode if request.componentCode.strip() else """import { BrowserRouter, Routes, Route } from 'react-router-dom'
+        app_code = """import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Home from './pages/Home'
 
 function App() {
@@ -200,6 +200,29 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }"""
         (project_path / "src" / "index.css").write_text(index_css, encoding="utf-8")
+
+        # tsconfig.json 생성
+        tsconfig = """{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": [
+      "DOM",
+      "ES2020"
+    ],
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": false,
+    "noEmit": true
+  },
+  "include": [
+    "src"
+  ]
+}"""
+        (project_path / "tsconfig.json").write_text(tsconfig, encoding="utf-8")
 
         print(project_path)
         # 의존성 설치 및 개발 서버 시작
