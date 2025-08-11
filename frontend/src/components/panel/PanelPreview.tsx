@@ -21,7 +21,7 @@ export const PanelPreview: React.FC<Props> = ({
         <iframe
           ref={iframeRef}
           src={buildPreviewUrl(devServerUrl, routePath)}
-          className="w-full h-full border-0 bg-[#0b0f1a]"
+          className="w-full h-full border-0 bg-white"
           title="React Preview"
           sandbox="allow-scripts allow-same-origin"
         />

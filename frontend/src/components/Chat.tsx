@@ -4,7 +4,7 @@ import { Send } from "lucide-react";
 type Role = "user" | "assistant" | "system";
 type Message = { role: Role; content: string };
 
-const API_BASE = "http://localhost:3001/api";
+const API_BASE = process.env.REACT_APP_API_URL + "/api";
 
 interface ChatProps {
   selectedFilePath?: string;
@@ -29,6 +29,7 @@ export const Chat: React.FC<ChatProps> = ({
   const [error, setError] = useState<string>("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const isProcessingRef = useRef<boolean>(false); // API 호출 중복 방지
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
@@ -50,7 +51,9 @@ export const Chat: React.FC<ChatProps> = ({
   };
 
   const sendMessage = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isSending || isProcessingRef.current) return; // 중복 호출 방지
+
+    isProcessingRef.current = true; // 처리 시작
     const userMsg: Message = { role: "user", content: input.trim() };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
@@ -91,13 +94,12 @@ export const Chat: React.FC<ChatProps> = ({
       setError(e?.message || "요청 중 오류가 발생했습니다.");
     } finally {
       setIsSending(false);
+      isProcessingRef.current = false; // 처리 완료
     }
   };
 
   return (
     <div className="flex h-full flex-col min-h-0">
-      {/* 서버 프록시 모드 - 별도 키 입력 불필요 */}
-
       {/* 메시지 목록 */}
       <div
         ref={scrollRef}
@@ -160,7 +162,11 @@ export const Chat: React.FC<ChatProps> = ({
               }}
             />
             <button
-              disabled={isSending || input.trim().length === 0}
+              disabled={
+                isSending ||
+                input.trim().length === 0 ||
+                isProcessingRef.current
+              }
               className="inline-flex items-center justify-center h-9 w-9 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60"
               onClick={sendMessage}
               title="메시지 전송"

@@ -44,7 +44,7 @@ const ReactEditor = () => {
   const [routeInput, setRouteInput] = useState("/");
   const [activeRight, setActiveRight] = useState<"code" | "preview">("code");
 
-  const API_BASE = "http://localhost:3001/api";
+  const API_BASE = process.env.REACT_APP_API_URL + "/api";
   // routePath가 변경되면 입력값 동기화
   useEffect(() => {
     setRouteInput(routePath || "/");
@@ -70,6 +70,8 @@ const ReactEditor = () => {
 
   // API 호출 헬퍼 함수
   const apiCall = async (endpoint, options = {}) => {
+    console.log("base url", API_BASE);
+    console.log("endpoint", endpoint);
     try {
       const response = await fetch(`${API_BASE}${endpoint}`, {
         headers: { "Content-Type": "application/json" },
@@ -90,6 +92,7 @@ const ReactEditor = () => {
 
   // 프로젝트 초기화
   const initializeProject = async () => {
+    console.log("base url", API_BASE);
     console.log("Initializing project...");
     await apiCall("/init-project", {
       method: "POST",
@@ -189,6 +192,27 @@ const ReactEditor = () => {
     }
   };
 
+  // 채팅에서 파일 업데이트 처리
+  const handleFileUpdate = async (filePath: string, newContent: string) => {
+    try {
+      // 파일 내용 업데이트
+      await apiCall("/file", {
+        method: "PUT",
+        body: JSON.stringify({ relativePath: filePath, content: newContent }),
+      });
+
+      // 현재 선택된 파일이 업데이트된 파일과 같으면 에디터도 업데이트
+      if (selectedFilePath === filePath) {
+        setCode(newContent);
+      }
+
+      console.log("File updated by chat:", filePath);
+    } catch (error) {
+      console.error("Error updating file from chat:", error);
+      setError("파일 업데이트 중 오류가 발생했습니다.");
+    }
+  };
+
   // 전체 프로세스 실행
   const runFullProcess = async () => {
     setLoading(true);
@@ -206,7 +230,7 @@ const ReactEditor = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col text-slate-200 bg-[#0b0f1a]">
+    <div className="min-h-screen flex flex-col text-slate-200 bg-[#0b0f1a] h-[100vh]">
       {/* 상단 툴바 */}
       <div className="flex justify-between items-center px-5 py-4 border-b border-white/10 bg-white/5 backdrop-blur supports-[backdrop-filter]:bg-white/5">
         <h1 className="m-0 text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-300 to-cyan-300">
@@ -234,14 +258,18 @@ const ReactEditor = () => {
         </div>
       )}
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden h-[90vh]">
         {/* 왼쪽: Chat 패널 */}
-        <div className="w-[360px] m-3 rounded-xl overflow-hidden bg-white/5 border border-white/10 flex flex-col">
-          <div className="px-4 py-3 border-b border-white/10 bg-white/5 font-semibold">
+        <div className="w-[360px] m-3 rounded-xl overflow-hidden bg-white/5 border border-white/10 flex flex-col min-h-0">
+          <div className="px-4 py-3 border-b border-white/10 bg-white/5 font-semibold flex-shrink-0">
             Chat
           </div>
-          <div className="flex-1 overflow-auto p-3">
-            <Chat />
+          <div className="flex-1 overflow-hidden p-3 min-h-0">
+            <Chat
+              selectedFilePath={selectedFilePath}
+              fileContent={code}
+              onFileUpdate={handleFileUpdate}
+            />
           </div>
         </div>
 
