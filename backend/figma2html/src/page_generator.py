@@ -1,4 +1,3 @@
-import asyncio
 import json
 import os
 import re
@@ -40,7 +39,7 @@ class PageGenerator:
         files = os.listdir(self.components_dir)
         return [f[:-4] for f in files if f.endswith(".tsx")]
 
-    def generate_layout_with_llm(
+    async def generate_layout_with_llm(
         self, html_code: str, css_code: str, output: str
     ) -> Tuple[bool, str]:
         """
@@ -166,14 +165,12 @@ class PageGenerator:
                 f"CSS:\n{css_code}\n"
             )
         try:
-            tsx_code = asyncio.run(
-                self.react_generator._generate_react_from_html_css_with_prompt(prompt)
-            )
+            tsx_code = await self.react_generator._generate_react_from_html_css_with_prompt(prompt)
             return True, tsx_code
         except Exception as e:
             return False, str(e)
 
-    def generate_component_with_llm(self, component_json: dict) -> Tuple[bool, str]:
+    async def generate_component_with_llm(self, component_json: dict) -> Tuple[bool, str]:
         """
         하나의 섹션/프레임 JSON을 LLM에 전달해 컴포넌트 TSX 생성
         """
@@ -191,9 +188,7 @@ class PageGenerator:
 - 설명, 마크다운 금지
 """
         try:
-            tsx_code = asyncio.run(
-                self.react_generator._generate_react_from_figma_json_with_prompt(prompt)
-            )
+            tsx_code = await self.react_generator._generate_react_from_figma_json_with_prompt(prompt)
             return True, tsx_code
         except Exception as e:
             return False, str(e)

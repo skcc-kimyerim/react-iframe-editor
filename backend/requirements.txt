@@ -9,6 +9,17 @@ httpx>=0.25,<0.28
 pydantic>=2.7,<3.0
 pydantic-settings>=2.3,<3.0
 
+# figma2html 모듈 의존성 추가
+requests>=2.28.0
+click>=8.0.0
+colorama>=0.4.4
+python-dotenv>=0.19.0
+aiohttp>=3.8.0
+openai>=1.0.0
+
+# LangGraph 워크플로우
+langgraph>=0.0.55    # LangGraph 라이브러리
+
 # 추가 유용한 패키지 (선택사항)
 python-multipart==0.0.6  # 파일 업로드 지원시 필요
 aiofiles==23.2.1          # 비동기 파일 I/O (더 나은 성능을 위해)

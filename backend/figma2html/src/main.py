@@ -3,6 +3,7 @@ Figma to Code - Python Implementation
 Figma 디자인을 HTML/CSS로 변환하는 메인 CLI 인터페이스
 """
 
+import asyncio
 import os
 import sys
 import time
@@ -362,7 +363,7 @@ def convert_react(figma_url: str, output: str, token: Optional[str]):
 
         # 첫 번째 노드를 사용해서 컴포넌트 생성
         first_node = raw_nodes[0]
-        success, message = generator.generate_component(first_node, output)
+        success, message = asyncio.run(generator.generate_component(first_node, output))
 
         if success:
             logging.info(f"{Fore.GREEN}🎉 {message}{Style.RESET_ALL}")
@@ -488,7 +489,7 @@ def convert_react_selection(
             inject_metadata(node, file_key, node_id)
 
             try:
-                success, message = generator.generate_component(node, output)
+                success, message = asyncio.run(generator.generate_component(node, output))
                 if success:
                     logging.info(
                         f"{Fore.GREEN}✅ {generator.component_name} 생성 완료{Style.RESET_ALL}"
@@ -660,9 +661,9 @@ def create_page(
             sys.exit(1)
 
         # TSX 페이지 생성
-        success, tsx_code = generator.generate_layout_with_llm(
+        success, tsx_code = asyncio.run(generator.generate_layout_with_llm(
             html_code, css_code, output
-        )
+        ))
         if success:
             # TSX 파일명 생성
             tsx_filename = make_filename(node_name)
