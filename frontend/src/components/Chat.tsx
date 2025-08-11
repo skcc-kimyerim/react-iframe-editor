@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Send } from "lucide-react";
+import { Send, X } from "lucide-react";
 
 type Role = "user" | "assistant" | "system";
 type Message = { role: Role; content: string };
@@ -10,12 +10,14 @@ interface ChatProps {
   selectedFilePath?: string;
   fileContent?: string;
   onFileUpdate?: (filePath: string, content: string) => void;
+  onClearSelectedFile?: () => void;
 }
 
 export const Chat: React.FC<ChatProps> = ({
   selectedFilePath,
   fileContent,
   onFileUpdate,
+  onClearSelectedFile,
 }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -136,7 +138,19 @@ export const Chat: React.FC<ChatProps> = ({
       {/* 선택된 파일 표시 */}
       {selectedFilePath && (
         <div className="px-3 py-2 text-xs text-cyan-200 bg-cyan-500/10 border-t border-cyan-400/30">
-          📁 선택된 파일: {selectedFilePath}
+          <div className="flex items-center justify-between">
+            <span>📁 선택된 파일: {selectedFilePath}</span>
+            {onClearSelectedFile && (
+              <button
+                onClick={onClearSelectedFile}
+                className="ml-2 p-1 rounded-md hover:bg-cyan-400/20 transition-colors"
+                title="파일 선택 해제"
+                aria-label="Clear selected file"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
         </div>
       )}
 

@@ -1,8 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import Editor from "@monaco-editor/react";
-import { getLanguageFromPath } from "../utils/getLanguageFromPath";
-import { RefreshCcw } from "lucide-react";
-import { TreeView } from "./TreeView";
 import { Chat } from "./Chat";
 import { Panel } from "./Panel";
 
@@ -269,6 +265,7 @@ const ReactEditor = () => {
               selectedFilePath={selectedFilePath}
               fileContent={code}
               onFileUpdate={handleFileUpdate}
+              onClearSelectedFile={() => setSelectedFilePath("")}
             />
           </div>
         </div>
