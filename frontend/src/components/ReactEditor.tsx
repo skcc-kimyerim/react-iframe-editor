@@ -66,8 +66,6 @@ const ReactEditor = () => {
 
   // API 호출 헬퍼 함수
   const apiCall = async (endpoint, options = {}) => {
-    console.log("base url", API_BASE);
-    console.log("endpoint", endpoint);
     try {
       const response = await fetch(`${API_BASE}${endpoint}`, {
         headers: { "Content-Type": "application/json" },

@@ -80,10 +80,48 @@ async def init_project(request: ProjectInitRequest):
 
         # src 및 public 디렉토리 생성
         (project_path / "src").mkdir(exist_ok=True)
+        (project_path / "src" / "pages").mkdir(exist_ok=True)
         (project_path / "public").mkdir(exist_ok=True)
 
-        # App.tsx 생성
-        (project_path / "src" / "App.tsx").write_text(request.componentCode, encoding="utf-8")
+        # App.tsx 생성 - 기본 템플릿이 없으면 React Router 예시 코드 사용
+        app_code = request.componentCode if request.componentCode.strip() else """import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import Home from './pages/Home'
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+      </Routes>
+    </BrowserRouter>
+  )
+}
+
+export default App"""
+        
+        (project_path / "src" / "App.tsx").write_text(app_code, encoding="utf-8")
+
+        # src/pages/Home.tsx 생성
+        home_tsx = """
+function Home() {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="max-w-md mx-auto text-center">
+        <h1 className="text-4xl font-bold text-gray-900 mb-4">환영합니다!</h1>
+        <p className="text-gray-600 mb-8">React Router가 설정된 동적 React 앱입니다.</p>
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500">
+            새로운 페이지를 만들어 라우팅을 확장해보세요!
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default Home"""
+        
+        (project_path / "src" / "pages" / "Home.tsx").write_text(home_tsx, encoding="utf-8")
 
         # main.tsx 생성 (Vite는 main.tsx 사용)
         main_tsx = """import React from 'react'
