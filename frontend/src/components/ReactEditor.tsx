@@ -40,7 +40,7 @@ const ReactEditor = () => {
   const [routeInput, setRouteInput] = useState("/");
   const [activeRight, setActiveRight] = useState<"code" | "preview">("code");
 
-  const API_BASE = process.env.REACT_APP_API_URL + "/api";
+  const API_BASE = (import.meta as any).env.VITE_REACT_APP_API_URL + "/api";
   // routePath가 변경되면 입력값 동기화
   useEffect(() => {
     setRouteInput(routePath || "/");

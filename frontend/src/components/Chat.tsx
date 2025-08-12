@@ -4,7 +4,7 @@ import { Send, X } from "lucide-react";
 type Role = "user" | "assistant" | "system";
 type Message = { role: Role; content: string };
 
-const API_BASE = process.env.REACT_APP_API_URL + "/api";
+const API_BASE = (import.meta as any).env.VITE_REACT_APP_API_URL + "/api";
 
 interface ChatProps {
   selectedFilePath?: string;

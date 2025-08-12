@@ -41,7 +41,7 @@ export const PanelCode: React.FC<Props> = ({
             <RefreshCcw size={16} aria-label="Refresh file tree" />
           </button>
         </div>
-        <div className="p-2 pb-3 overflow-y-auto overflow-x-hidden flex-1 min-h-0">
+        <div className="p-2 pb-3 overflow-y-auto overflow-x-hidden flex-1 min-h-0 scrollbar-hide">
           {loadingFiles ? (
             <div className="text-sm text-slate-400 px-3 py-2">
               Loading files...
