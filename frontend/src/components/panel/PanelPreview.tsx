@@ -23,7 +23,7 @@ export const PanelPreview: React.FC<Props> = ({
           src={buildPreviewUrl(devServerUrl, routePath)}
           className="w-full h-full border-0 bg-white"
           title="React Preview"
-          sandbox="allow-scripts allow-same-origin"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups"
         />
       </div>
     );

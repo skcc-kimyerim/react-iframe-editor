@@ -121,57 +121,91 @@ async def get_figma_info(request: FigmaUrlRequest):
 async def convert_figma_components(request: FigmaUrlRequest):
     """
     Figma 선택 영역의 모든 컴포넌트를 React TSX로 변환
+    main.py의 convert_react_selection 로직을 기반으로 함
     """
     try:
+        logger.info("🔄 Figma 노드 선택의 모든 컴포넌트를 React로 변환 중...")
+        
+        # 1. Figma API 토큰 확인
         figma_token = os.getenv("FIGMA_API_TOKEN")
         if not figma_token:
             raise HTTPException(status_code=500, detail="FIGMA_API_TOKEN이 설정되지 않았습니다")
         
+        # 2. Figma URL 파싱
         file_key, node_id = parse_figma_url(request.figma_url)
-        if not file_key or not node_id:
+        if not file_key:
+            raise HTTPException(status_code=400, detail="잘못된 Figma URL입니다")
+        
+        if not node_id:
             raise HTTPException(
                 status_code=400, 
-                detail="컴포넌트 변환에는 특정 노드가 선택된 URL이 필요합니다"
+                detail="node-id가 필요합니다. 특정 노드를 선택해주세요"
             )
         
+        logger.info(f"📂 파일 키: {file_key}")
+        logger.info(f"🎯 노드 ID: {node_id}")
+        
+        # 3. 특정 노드 데이터 가져오기
+        logger.info("🔄 선택된 노드 데이터 가져오는 중...")
         with tempfile.TemporaryDirectory() as temp_dir:
             converter = FigmaToCode(figma_token)
             raw_nodes, node_name = converter._fetch_figma_data(file_key, node_id)
             
             if not raw_nodes:
-                raise HTTPException(status_code=500, detail="Figma 데이터를 가져올 수 없습니다")
+                logger.error("❌ Figma 노드 데이터를 가져오는데 실패했습니다")
+                raise HTTPException(status_code=500, detail="Figma 노드 데이터를 가져오는데 실패했습니다")
             
-            # CLI 로직에서 가져온 컴포넌트 추출 함수 사용
+            logger.info("✅ Figma 노드 데이터 가져오기 성공")
+            logger.info(f"📝 선택된 노드: '{node_name}'")
+            
+            # 4. 선택된 노드에서 모든 컴포넌트 추출 (항상 filter_components=True)
             from figma2html.src.main import _extract_all_nodes_from_selection
             selected_node = raw_nodes[0]
             all_nodes = _extract_all_nodes_from_selection(selected_node, filter_components=True)
-            logger.info(f"추출된 컴포넌트 수: {len(all_nodes)}")
+            
             if not all_nodes:
+                logger.warning("⚠️ 처리할 컴포넌트가 없습니다")
                 return {
                     "success": True,
-                    "message": "처리할 컴포넌트가 없습니다",
+                    "message": "처리할 컴포넌트가 없습니다 (COMPONENT/INSTANCE 타입만 필터링됨)",
+                    "file_key": file_key,
+                    "node_id": node_id,
+                    "selected_node_name": node_name,
                     "components": [],
-                    "total_count": 0
+                    "total_count": 0,
+                    "success_count": 0,
+                    "failure_count": 0
                 }
             
+            logger.info(f"🎯 찾은 컴포넌트 수: {len(all_nodes)}개")
+            
+            # 5. 각 컴포넌트별로 React 컴포넌트 생성
             generator = ReactComponentGenerator()
             components = []
             success_count = 0
             failure_count = 0
             
-            for i, node in enumerate(all_nodes):
+            for i, node in enumerate(all_nodes, 1):
+                node_name_current = node.get("name", f"Component_{i}")
+                node_type = node.get("type", "UNKNOWN")
+                
+                logger.info(f"🔄 [{i}/{len(all_nodes)}] {node_type}: '{node_name_current}' 처리 중...")
+                
                 try:
+                    # 메타데이터 주입
                     from figma2html.src.utils import inject_metadata
                     inject_metadata(node, file_key, node_id)
                     
                     success, message = await generator.generate_component(node, temp_dir)
                     
                     component_info = {
-                        "name": node.get("name", f"Component_{i+1}"),
-                        "type": node.get("type", "UNKNOWN"),
+                        "name": node_name_current,
+                        "type": node_type,
                         "success": success,
                         "message": message,
-                        "component_name": generator.component_name if success else None
+                        "component_name": generator.component_name if success else None,
+                        "width": node.get("width", 0),
+                        "height": node.get("height", 0)
                     }
                     
                     # 생성된 파일 내용도 포함
@@ -183,22 +217,35 @@ async def convert_figma_components(request: FigmaUrlRequest):
                                 with open(component_path, 'r', encoding='utf-8') as f:
                                     component_info["code"] = f.read()
                         except Exception as e:
-                            logging.warning(f"컴포넌트 파일 읽기 실패: {e}")
+                            logger.warning(f"컴포넌트 파일 읽기 실패: {e}")
                         
+                        logger.info(f"✅ {generator.component_name} 생성 완료")
                         success_count += 1
                     else:
+                        logger.error(f"❌ {node_name_current} 생성 실패: {message}")
                         failure_count += 1
                     
                     components.append(component_info)
                     
                 except Exception as e:
+                    logger.error(f"❌ {node_name_current} 처리 중 오류: {e}")
                     failure_count += 1
                     components.append({
-                        "name": node.get("name", f"Component_{i+1}"),
-                        "type": node.get("type", "UNKNOWN"),
+                        "name": node_name_current,
+                        "type": node_type,
                         "success": False,
-                        "message": f"처리 중 오류: {str(e)}"
+                        "message": f"처리 중 오류: {str(e)}",
+                        "component_name": None,
+                        "width": node.get("width", 0),
+                        "height": node.get("height", 0)
                     })
+            
+            # 6. 결과 요약
+            logger.info("🎉 선택 노드 변환 완료!")
+            logger.info(f"📊 성공: {success_count}개, 실패: {failure_count}개")
+            
+            if success_count > 0:
+                logger.info("💡 컴포넌트가 성공적으로 생성되었습니다")
             
             return {
                 "success": True,
@@ -209,13 +256,14 @@ async def convert_figma_components(request: FigmaUrlRequest):
                 "components": components,
                 "total_count": len(all_nodes),
                 "success_count": success_count,
-                "failure_count": failure_count
+                "failure_count": failure_count,
+                "filter_applied": "COMPONENT/INSTANCE 타입만 필터링됨"
             }
     
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"컴포넌트 변환 오류: {str(e)}")
+        logger.error(f"컴포넌트 변환 오류: {str(e)}")
         raise HTTPException(status_code=500, detail=f"컴포넌트 변환 중 오류: {str(e)}")
 
 

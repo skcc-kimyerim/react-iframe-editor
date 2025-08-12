@@ -52,19 +52,23 @@ async def chat_proxy(req: ChatRequest):
             file_content=req.fileContent
         )
         
-        # Figma 처리가 성공한 경우
-        if workflow_result and workflow_result.get("success") and workflow_result.get("processing_type") in ["components", "page"]:
+        logger.info(f"LangGraph 워크플로우 결과: {workflow_result}")
+        
+        # LangGraph 처리가 성공한 경우 (조건 확장)
+        if workflow_result and workflow_result.get("success"):
+            processing_type = workflow_result.get("processing_type", "")
             chat_message = workflow_result.get("chat_message", "처리가 완료되었습니다.")
             
             # 에디터 업데이트 정보
             updated_file = None
             updated_content = None
             
-            if workflow_result.get("editor_content"):
+            # Figma 처리나 파일 채팅의 경우 에디터 업데이트 확인
+            if processing_type in ["components", "page", "file_chat"] and workflow_result.get("editor_content"):
                 updated_file = workflow_result.get("editor_filename", "src/components/figma_output.tsx")
                 updated_content = workflow_result["editor_content"]
             
-            logger.info(f"LangGraph 처리 성공: {chat_message}")
+            logger.info(f"LangGraph 처리 성공 ({processing_type}): {chat_message}")
             return ChatResponse(
                 content=chat_message,
                 updatedFile=updated_file,
