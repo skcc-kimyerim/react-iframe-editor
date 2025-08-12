@@ -48,7 +48,7 @@ CORS_ALLOW_ORIGINS=["*"]
 
 ```bash
 # 백엔드 API 서버 주소
-REACT_APP_API_URL=http://localhost:3001
+VITE_REACT_APP_API_URL=http://localhost:3001
 ```
 
 ### 2. 백엔드 실행
