@@ -2,12 +2,16 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from pathlib import Path
 import json
+import logging
 
 from ..core.config import settings
 from ..services.react_dev_server import react_manager
 
 
 router = APIRouter(tags=["project"])
+
+# 로거 설정
+logger = logging.getLogger("app.project")
 
 
 class ProjectInitRequest(BaseModel):
@@ -224,7 +228,7 @@ body {
 }"""
         (project_path / "tsconfig.json").write_text(tsconfig, encoding="utf-8")
 
-        print(project_path)
+        logger.info(f"프로젝트 경로: {project_path}")
         # 의존성 설치 및 개발 서버 시작
         await react_manager.install_dependencies()
         await react_manager.ensure_typescript_and_router()

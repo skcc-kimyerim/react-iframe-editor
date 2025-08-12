@@ -1,12 +1,15 @@
 from fastapi import FastAPI
-from .core.config import setup_middleware
+from .core.config import setup_middleware, setup_logging
 from .core.lifecycle import lifespan
 from .routers import health, files, components, devserver, chat, project, figma
 
+# 로깅 초기화
+logger = setup_logging()
 
 def create_app() -> FastAPI:
     app = FastAPI(lifespan=lifespan)
     setup_middleware(app)
+    logger.info("🚀 FastAPI application initialized")
     api_prefix = "/api"
     app.include_router(health.router, prefix=api_prefix)
     app.include_router(files.router, prefix=api_prefix)

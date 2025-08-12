@@ -57,12 +57,36 @@ export const Chat: React.FC<ChatProps> = ({
 
     isProcessingRef.current = true; // 처리 시작
     const userMsg: Message = { role: "user", content: input.trim() };
-    setMessages((prev) => [...prev, userMsg]);
+
+    // 첫 번째 메시지를 보낼 때 초기 안내 메시지 제거
+    setMessages((prev) => {
+      // 초기 안내 메시지가 있다면 제거하고 사용자 메시지만 추가
+      if (
+        prev.length === 1 &&
+        prev[0].role === "assistant" &&
+        prev[0].content ===
+          "안녕하세요! 좌측 채팅창에서 질문을 보내면 우측 Code/Preview와 함께 작업을 도와드릴게요."
+      ) {
+        return [userMsg];
+      }
+      return [...prev, userMsg];
+    });
+
     setInput("");
     setIsSending(true);
     setError("");
 
     try {
+      // 초기 안내 메시지를 제외한 메시지 목록 생성
+      const messagesToSend = messages.filter(
+        (msg) =>
+          !(
+            msg.role === "assistant" &&
+            msg.content ===
+              "안녕하세요! 좌측 채팅창에서 질문을 보내면 우측 Code/Preview와 함께 작업을 도와드릴게요."
+          )
+      );
+
       const res = await fetch(`${API_BASE}/chat`, {
         method: "POST",
         headers: {
@@ -70,7 +94,7 @@ export const Chat: React.FC<ChatProps> = ({
         },
         body: JSON.stringify({
           model: "qwen/qwen3-coder:free",
-          messages: [...messages, userMsg],
+          messages: [...messagesToSend, userMsg],
           selectedFile: selectedFilePath,
           fileContent: fileContent,
         }),

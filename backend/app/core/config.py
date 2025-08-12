@@ -1,5 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
+import logging
+import sys
 
 
 class Settings(BaseSettings):
@@ -19,6 +21,27 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+# Logging 설정
+def setup_logging():
+    """애플리케이션 전체 로깅 설정"""
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.StreamHandler(sys.stdout),
+        ]
+    )
+    
+    # uvicorn 로거 설정
+    uvicorn_logger = logging.getLogger("uvicorn")
+    uvicorn_logger.setLevel(logging.INFO)
+    
+    # 애플리케이션 로거 생성
+    app_logger = logging.getLogger("app")
+    app_logger.setLevel(logging.INFO)
+    
+    return app_logger
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

@@ -42,6 +42,9 @@ except ImportError as e:
 
 router = APIRouter(prefix="/figma", tags=["figma"])
 
+# 로거 설정
+logger = logging.getLogger("app.figma")
+
 # Request/Response 모델들
 class FigmaRequest(BaseModel):
     figma_url: str
@@ -49,7 +52,7 @@ class FigmaRequest(BaseModel):
 
 class FigmaUrlRequest(BaseModel):
     figma_url: str
-    output_type: str = "html"  # "html", "react", "page"
+    output_type: str = "page"  #"components", "page"
 
 class FigmaConvertResponse(BaseModel):
     success: bool
@@ -77,11 +80,7 @@ class FigmaProcessResponse(BaseModel):
     node_id: str | None = None
     node_name: str | None = None
     node_type: str | None = None
-    # 단일 변환 결과
-    html_content: str | None = None
-    css_content: str | None = None
-    react_content: str | None = None
-    # 다중 컴포넌트 결과
+    # 컴포넌트 결과
     components: List[Dict[str, Any]] | None = None
     total_count: int | None = None
     success_count: int | None = None
@@ -116,10 +115,116 @@ async def get_figma_info(request: FigmaUrlRequest):
         logging.error(f"Figma URL 분석 오류: {str(e)}")
         raise HTTPException(status_code=400, detail=f"URL 분석 오류: {str(e)}")
 
+# TODO: vue, svelte 추가 필요
+# components 변환만을 위한 router(vue, svelte 추가 필요)
+@router.post("/components", response_model=Dict[str, Any])
+async def convert_figma_components(request: FigmaUrlRequest):
+    """
+    Figma 선택 영역의 모든 컴포넌트를 React TSX로 변환
+    """
+    try:
+        figma_token = os.getenv("FIGMA_API_TOKEN")
+        if not figma_token:
+            raise HTTPException(status_code=500, detail="FIGMA_API_TOKEN이 설정되지 않았습니다")
+        
+        file_key, node_id = parse_figma_url(request.figma_url)
+        if not file_key or not node_id:
+            raise HTTPException(
+                status_code=400, 
+                detail="컴포넌트 변환에는 특정 노드가 선택된 URL이 필요합니다"
+            )
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            converter = FigmaToCode(figma_token)
+            raw_nodes, node_name = converter._fetch_figma_data(file_key, node_id)
+            
+            if not raw_nodes:
+                raise HTTPException(status_code=500, detail="Figma 데이터를 가져올 수 없습니다")
+            
+            # CLI 로직에서 가져온 컴포넌트 추출 함수 사용
+            from figma2html.src.main import _extract_all_nodes_from_selection
+            selected_node = raw_nodes[0]
+            all_nodes = _extract_all_nodes_from_selection(selected_node, filter_components=True)
+            logger.info(f"추출된 컴포넌트 수: {len(all_nodes)}")
+            if not all_nodes:
+                return {
+                    "success": True,
+                    "message": "처리할 컴포넌트가 없습니다",
+                    "components": [],
+                    "total_count": 0
+                }
+            
+            generator = ReactComponentGenerator()
+            components = []
+            success_count = 0
+            failure_count = 0
+            
+            for i, node in enumerate(all_nodes):
+                try:
+                    from figma2html.src.utils import inject_metadata
+                    inject_metadata(node, file_key, node_id)
+                    
+                    success, message = await generator.generate_component(node, temp_dir)
+                    
+                    component_info = {
+                        "name": node.get("name", f"Component_{i+1}"),
+                        "type": node.get("type", "UNKNOWN"),
+                        "success": success,
+                        "message": message,
+                        "component_name": generator.component_name if success else None
+                    }
+                    
+                    # 생성된 파일 내용도 포함
+                    if success:
+                        try:
+                            component_file = f"{generator.component_name}.tsx"
+                            component_path = os.path.join(temp_dir, component_file)
+                            if os.path.exists(component_path):
+                                with open(component_path, 'r', encoding='utf-8') as f:
+                                    component_info["code"] = f.read()
+                        except Exception as e:
+                            logging.warning(f"컴포넌트 파일 읽기 실패: {e}")
+                        
+                        success_count += 1
+                    else:
+                        failure_count += 1
+                    
+                    components.append(component_info)
+                    
+                except Exception as e:
+                    failure_count += 1
+                    components.append({
+                        "name": node.get("name", f"Component_{i+1}"),
+                        "type": node.get("type", "UNKNOWN"),
+                        "success": False,
+                        "message": f"처리 중 오류: {str(e)}"
+                    })
+            
+            return {
+                "success": True,
+                "message": f"컴포넌트 변환 완료: 성공 {success_count}개, 실패 {failure_count}개",
+                "file_key": file_key,
+                "node_id": node_id,
+                "selected_node_name": node_name,
+                "components": components,
+                "total_count": len(all_nodes),
+                "success_count": success_count,
+                "failure_count": failure_count
+            }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"컴포넌트 변환 오류: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"컴포넌트 변환 중 오류: {str(e)}")
+
+
+# 페이지 변환만을 위해 필요한 것 (옵션 vue, svelte)
+# TODO: components & page 변환 한꺼번에 하는게 필요할지도,,?
 @router.post("/convert", response_model=FigmaConvertResponse)
 async def convert_figma(request: FigmaUrlRequest, background_tasks: BackgroundTasks):
     """
-    Figma 디자인을 HTML/CSS, React 컴포넌트, 또는 페이지로 변환
+    Figma 디자인을 React 컴포넌트, 또는 페이지로 변환
     """
     try:
         # Figma API 토큰 확인
@@ -139,26 +244,26 @@ async def convert_figma(request: FigmaUrlRequest, background_tasks: BackgroundTa
         with tempfile.TemporaryDirectory() as temp_dir:
             converter = FigmaToCode(figma_token)
             
-            if request.output_type == "html":
-                # HTML/CSS 변환
-                success, message, html_content, css_content, node_name = converter.convert_from_url(
-                    request.figma_url, temp_dir
-                )
+            # if request.output_type == "html":
+            #     # HTML/CSS 변환
+            #     success, message, html_content, css_content, node_name = converter.convert_from_url(
+            #         request.figma_url, temp_dir
+            #     )
                 
-                if not success:
-                    raise HTTPException(status_code=500, detail=message)
+            #     if not success:
+            #         raise HTTPException(status_code=500, detail=message)
                 
-                return FigmaConvertResponse(
-                    success=True,
-                    message="HTML/CSS 변환 성공",
-                    file_key=file_key,
-                    node_id=node_id,
-                    node_name=node_name,
-                    html_content=html_content,
-                    css_content=css_content
-                )
+            #     return FigmaConvertResponse(
+            #         success=True,
+            #         message="HTML/CSS 변환 성공",
+            #         file_key=file_key,
+            #         node_id=node_id,
+            #         node_name=node_name,
+            #         html_content=html_content,
+            #         css_content=css_content
+            #     )
             
-            elif request.output_type == "react":
+            if request.output_type == "components":
                 # React 컴포넌트 변환
                 if not node_id:
                     raise HTTPException(
@@ -238,106 +343,7 @@ async def convert_figma(request: FigmaUrlRequest, background_tasks: BackgroundTa
         logging.error(f"Figma 변환 오류: {str(e)}")
         raise HTTPException(status_code=500, detail=f"변환 중 오류 발생: {str(e)}")
 
-@router.post("/components", response_model=Dict[str, Any])
-async def convert_figma_components(request: FigmaUrlRequest):
-    """
-    Figma 선택 영역의 모든 컴포넌트를 React TSX로 변환
-    """
-    try:
-        figma_token = os.getenv("FIGMA_API_TOKEN")
-        if not figma_token:
-            raise HTTPException(status_code=500, detail="FIGMA_API_TOKEN이 설정되지 않았습니다")
-        
-        file_key, node_id = parse_figma_url(request.figma_url)
-        if not file_key or not node_id:
-            raise HTTPException(
-                status_code=400, 
-                detail="컴포넌트 변환에는 특정 노드가 선택된 URL이 필요합니다"
-            )
-        
-        with tempfile.TemporaryDirectory() as temp_dir:
-            converter = FigmaToCode(figma_token)
-            raw_nodes, node_name = converter._fetch_figma_data(file_key, node_id)
-            
-            if not raw_nodes:
-                raise HTTPException(status_code=500, detail="Figma 데이터를 가져올 수 없습니다")
-            
-            # CLI 로직에서 가져온 컴포넌트 추출 함수 사용
-            from figma2html.src.main import _extract_all_nodes_from_selection
-            selected_node = raw_nodes[0]
-            all_nodes = _extract_all_nodes_from_selection(selected_node, filter_components=True)
-            
-            if not all_nodes:
-                return {
-                    "success": True,
-                    "message": "처리할 컴포넌트가 없습니다",
-                    "components": [],
-                    "total_count": 0
-                }
-            
-            generator = ReactComponentGenerator()
-            components = []
-            success_count = 0
-            failure_count = 0
-            
-            for i, node in enumerate(all_nodes):
-                try:
-                    from figma2html.src.utils import inject_metadata
-                    inject_metadata(node, file_key, node_id)
-                    
-                    success, message = await generator.generate_component(node, temp_dir)
-                    
-                    component_info = {
-                        "name": node.get("name", f"Component_{i+1}"),
-                        "type": node.get("type", "UNKNOWN"),
-                        "success": success,
-                        "message": message,
-                        "component_name": generator.component_name if success else None
-                    }
-                    
-                    # 생성된 파일 내용도 포함
-                    if success:
-                        try:
-                            component_file = f"{generator.component_name}.tsx"
-                            component_path = os.path.join(temp_dir, component_file)
-                            if os.path.exists(component_path):
-                                with open(component_path, 'r', encoding='utf-8') as f:
-                                    component_info["code"] = f.read()
-                        except Exception as e:
-                            logging.warning(f"컴포넌트 파일 읽기 실패: {e}")
-                        
-                        success_count += 1
-                    else:
-                        failure_count += 1
-                    
-                    components.append(component_info)
-                    
-                except Exception as e:
-                    failure_count += 1
-                    components.append({
-                        "name": node.get("name", f"Component_{i+1}"),
-                        "type": node.get("type", "UNKNOWN"),
-                        "success": False,
-                        "message": f"처리 중 오류: {str(e)}"
-                    })
-            
-            return {
-                "success": True,
-                "message": f"컴포넌트 변환 완료: 성공 {success_count}개, 실패 {failure_count}개",
-                "file_key": file_key,
-                "node_id": node_id,
-                "selected_node_name": node_name,
-                "components": components,
-                "total_count": len(all_nodes),
-                "success_count": success_count,
-                "failure_count": failure_count
-            }
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        logging.error(f"컴포넌트 변환 오류: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"컴포넌트 변환 중 오류: {str(e)}")
+
 
 @router.post("/process", response_model=FigmaProcessResponse)
 async def process_figma(request: FigmaRequest):

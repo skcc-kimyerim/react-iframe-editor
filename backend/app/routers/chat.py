@@ -3,12 +3,17 @@ from pydantic import BaseModel
 import httpx
 import json
 import re
+import logging
+import traceback
 from ..core.config import settings
 from ..services.chat_workflow import ChatWorkflow
 
 router = APIRouter(tags=["chat"])
 
 OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/"
+
+# 로거 설정
+logger = logging.getLogger("app.chat")
 
 # LangGraph 워크플로우 인스턴스 생성
 chat_workflow = ChatWorkflow()
@@ -36,7 +41,7 @@ class ChatResponse(BaseModel):
 async def chat_proxy(req: ChatRequest):
     # 1. 먼저 LangGraph 워크플로우로 처리 시도
     user_message = req.messages[-1].content if req.messages else ""
-    print(user_message)
+    logger.info(f"사용자 메시지: {user_message}")
     
     try:
         # LangGraph 워크플로우 실행
@@ -59,7 +64,7 @@ async def chat_proxy(req: ChatRequest):
                 updated_file = workflow_result.get("editor_filename", "src/components/figma_output.tsx")
                 updated_content = workflow_result["editor_content"]
             
-            print(chat_message)
+            logger.info(f"LangGraph 처리 성공: {chat_message}")
             return ChatResponse(
                 content=chat_message,
                 updatedFile=updated_file,
@@ -68,8 +73,8 @@ async def chat_proxy(req: ChatRequest):
     
     except Exception as e:
         # LangGraph 처리 실패 시 로그만 남기고 기존 방식으로 fallback
-        import logging
-        logging.warning(f"LangGraph 워크플로우 처리 실패, fallback to OpenRouter: {e}")
+        logger.warning(f"⚠️ LangGraph 워크플로우 처리 실패, fallback to OpenRouter: {e}")
+        logger.debug(f"상세 오류: {traceback.format_exc()}")
     
     # 2. 기존 OpenRouter 방식으로 fallback
     api_key = settings.OPENROUTER_API_KEY
@@ -159,7 +164,7 @@ async def chat_proxy(req: ChatRequest):
                     if len(display_content) < 10:
                         display_content = "코드가 수정되었습니다! 에디터에서 확인해보세요."
             
-            print(display_content)
+            logger.info(f"OpenRouter 응답: {display_content}")
             return ChatResponse(
                 content=display_content or "",
                 updatedFile=updated_file,
