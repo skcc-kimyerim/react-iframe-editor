@@ -39,6 +39,9 @@ const ReactEditor = () => {
   const [routePath, setRoutePath] = useState("/");
   const [routeInput, setRouteInput] = useState("/");
   const [activeRight, setActiveRight] = useState<"code" | "preview">("code");
+  const [lastSavedPath, setLastSavedPath] = useState("");
+  const [lastSavedCode, setLastSavedCode] = useState("");
+  const isAutoSavingRef = useRef(false);
 
   const API_BASE = (import.meta as any).env.VITE_REACT_APP_API_URL + "/api";
   // routePath가 변경되면 입력값 동기화
@@ -151,6 +154,21 @@ const ReactEditor = () => {
     }
   };
 
+  // 파일 트리 갱신 (로딩 스피너 없이, 변경된 경우에만 반영)
+  const fetchFileTreeSilently = async () => {
+    try {
+      const data = await apiCall("/files");
+      const newTree = data.tree || [];
+      // 내용이 동일하면 상태 업데이트 생략하여 리렌더/깜박임 방지
+      const same = JSON.stringify(newTree) === JSON.stringify(fileTree);
+      if (!same) {
+        setFileTree(newTree);
+      }
+    } catch (e) {
+      // 조용히 무시 (자동 폴링에서는 에러로 UI 깜박이지 않도록)
+    }
+  };
+
   // 파일 내용 불러오기
   const loadFile = async (relativePath) => {
     try {
@@ -161,6 +179,9 @@ const ReactEditor = () => {
       );
       setCode(data.content ?? "");
       setSelectedFilePath(relativePath);
+      // 방금 불러온 내용은 디스크와 동기화된 상태로 간주하여 즉시 저장 트리거를 방지
+      setLastSavedPath(relativePath);
+      setLastSavedCode(data.content ?? "");
     } catch (e) {
       console.error("Error loading file:", e);
     } finally {
@@ -181,10 +202,40 @@ const ReactEditor = () => {
         body: JSON.stringify({ relativePath: selectedFilePath, content: code }),
       });
       console.log("Component updated successfully");
+      // 마지막 저장 시점 갱신
+      setLastSavedPath(selectedFilePath);
+      setLastSavedCode(code);
     } catch (error) {
       console.error("Error updating component:", error);
     }
   };
+
+  // 코드 자동 저장: 입력이 멈춘 뒤 1.5초 후 저장 (파일 선택되어 있고 로딩 중이 아닐 때)
+  useEffect(() => {
+    if (!selectedFilePath) return;
+    if (loadingFileContent) return;
+    // 변경 없음 → 저장 생략
+    if (selectedFilePath === lastSavedPath && code === lastSavedCode) return;
+
+    const timer = setTimeout(async () => {
+      if (isAutoSavingRef.current) return;
+      try {
+        isAutoSavingRef.current = true;
+        await updateComponent();
+      } catch (_) {
+      } finally {
+        isAutoSavingRef.current = false;
+      }
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [
+    code,
+    selectedFilePath,
+    loadingFileContent,
+    lastSavedPath,
+    lastSavedCode,
+  ]);
 
   // 채팅에서 파일 업데이트 처리
   const handleFileUpdate = async (filePath: string, newContent: string) => {
@@ -293,6 +344,7 @@ const ReactEditor = () => {
           buildPreviewUrl={buildPreviewUrl}
           iframeRef={iframeRef}
           configureMonaco={configureMonaco}
+          refreshFileTreeSilently={fetchFileTreeSilently}
         />
       </div>
     </div>
