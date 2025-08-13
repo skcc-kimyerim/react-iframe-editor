@@ -2,7 +2,7 @@ import asyncio
 import os
 import platform
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Set, Dict, Any
 
 from ..core.config import settings
 
@@ -12,6 +12,11 @@ class ReactDevServerManager:
         self.project_path = project_path
         self.port = port
         self._process: Optional[asyncio.subprocess.Process] = None
+        self._stdout_task: Optional[asyncio.Task] = None
+        self._stderr_task: Optional[asyncio.Task] = None
+        self._subscribers: Set[asyncio.Queue] = set()
+        self._buffer: List[Dict[str, Any]] = []
+        self._buffer_limit: int = 500
 
     def is_running(self) -> bool:
         return self._process is not None and self._process.returncode is None
@@ -117,6 +122,12 @@ class ReactDevServerManager:
             env=env,
         )
 
+        # spawn readers to capture logs
+        if self._process.stdout is not None:
+            self._stdout_task = asyncio.create_task(self._read_stream(self._process.stdout, "stdout"))
+        if self._process.stderr is not None:
+            self._stderr_task = asyncio.create_task(self._read_stream(self._process.stderr, "stderr"))
+
         # give it some time to boot
         await asyncio.sleep(10)
 
@@ -130,6 +141,54 @@ class ReactDevServerManager:
             pass
         finally:
             self._process = None
+            # cancel readers
+            if self._stdout_task:
+                self._stdout_task.cancel()
+                self._stdout_task = None
+            if self._stderr_task:
+                self._stderr_task.cancel()
+                self._stderr_task = None
+
+    async def _read_stream(self, stream: asyncio.StreamReader, stream_name: str) -> None:
+        try:
+            while True:
+                line = await stream.readline()
+                if not line:
+                    break
+                text = line.decode(errors="replace").rstrip("\n")
+                message = {
+                    "time": int(asyncio.get_event_loop().time() * 1000),
+                    "level": "error" if stream_name == "stderr" else "info",
+                    "stream": stream_name,
+                    "text": text,
+                }
+                # buffer
+                self._buffer.append(message)
+                if len(self._buffer) > self._buffer_limit:
+                    self._buffer = self._buffer[-self._buffer_limit :]
+                # broadcast
+                if self._subscribers:
+                    for q in list(self._subscribers):
+                        try:
+                            q.put_nowait(message)
+                        except Exception:
+                            pass
+        except asyncio.CancelledError:
+            return
+
+    def subscribe(self) -> asyncio.Queue:
+        q: asyncio.Queue = asyncio.Queue()
+        self._subscribers.add(q)
+        return q
+
+    def unsubscribe(self, q: asyncio.Queue) -> None:
+        try:
+            self._subscribers.discard(q)
+        except Exception:
+            pass
+
+    def get_buffer(self) -> List[Dict[str, Any]]:
+        return list(self._buffer)
 
 
 react_manager = ReactDevServerManager(settings.REACT_PROJECT_PATH, settings.REACT_DEV_PORT)
