@@ -29,7 +29,6 @@ type Props = {
   buildPreviewUrl: (baseUrl: string, path: string) => string;
   iframeRef: React.RefObject<HTMLIFrameElement>;
   configureMonaco: (monaco: any) => void;
-  refreshFileTreeSilently: () => Promise<void>;
 };
 
 export const Panel: React.FC<Props> = ({
@@ -56,7 +55,6 @@ export const Panel: React.FC<Props> = ({
   buildPreviewUrl,
   iframeRef,
   configureMonaco,
-  refreshFileTreeSilently,
 }) => {
   return (
     <div className="flex flex-1 flex-col m-3 rounded-xl overflow-hidden bg-white/5 border border-white/10 min-w-0">
@@ -80,7 +78,6 @@ export const Panel: React.FC<Props> = ({
           fileTree={fileTree}
           loadingFiles={loadingFiles}
           fetchFileTree={fetchFileTree}
-          refreshFileTreeSilently={refreshFileTreeSilently}
           selectedFilePath={selectedFilePath}
           loadFile={loadFile}
           loadingFileContent={loadingFileContent}

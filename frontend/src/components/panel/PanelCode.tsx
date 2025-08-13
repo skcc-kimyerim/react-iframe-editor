@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import Editor from "@monaco-editor/react";
 import { RefreshCcw } from "lucide-react";
 import { TreeView } from "../TreeView";
@@ -8,7 +8,6 @@ type Props = {
   fileTree: any[];
   loadingFiles: boolean;
   fetchFileTree: () => Promise<void>;
-  refreshFileTreeSilently: () => Promise<void>;
   selectedFilePath: string;
   loadFile: (relativePath: string) => Promise<void>;
   loadingFileContent: boolean;
@@ -21,7 +20,6 @@ export const PanelCode: React.FC<Props> = ({
   fileTree,
   loadingFiles,
   fetchFileTree,
-  refreshFileTreeSilently,
   selectedFilePath,
   loadFile,
   loadingFileContent,
@@ -29,45 +27,6 @@ export const PanelCode: React.FC<Props> = ({
   setCode,
   configureMonaco,
 }) => {
-  // 파일 트리 자동 새로고침 (조용히, 7초 간격)
-  useEffect(() => {
-    let stopped = false;
-    let timerId: number | undefined;
-
-    const schedule = (delayMs: number) => {
-      if (stopped) return;
-      timerId = window.setTimeout(tick, delayMs);
-    };
-
-    const tick = async () => {
-      try {
-        // 로딩 스피너 없이 조용히 동기화 (리스트 변경 시에만 상태 갱신)
-        await refreshFileTreeSilently();
-      } catch (_) {
-      } finally {
-        schedule(7000);
-      }
-    };
-
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        if (timerId == null) schedule(0);
-      } else if (timerId != null) {
-        clearTimeout(timerId);
-        timerId = undefined;
-      }
-    };
-
-    if (document.visibilityState === "visible") schedule(0);
-    document.addEventListener("visibilitychange", handleVisibility);
-
-    return () => {
-      stopped = true;
-      if (timerId != null) clearTimeout(timerId);
-      document.removeEventListener("visibilitychange", handleVisibility);
-    };
-  }, [refreshFileTreeSilently]);
-
   return (
     <div className="flex flex-1 min-h-0">
       {/* 파일 트리 섹션 */}
