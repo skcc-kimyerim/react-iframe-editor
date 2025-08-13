@@ -2,6 +2,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
 import logging
 import sys
+from dotenv import load_dotenv
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 
 class Settings(BaseSettings):
@@ -19,6 +22,11 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+# .env 로드 우선순위: backend/.env → 프로젝트 루트/.env
+_BACKEND_DIR = Path(__file__).resolve().parents[2]
+_PROJECT_ROOT = _BACKEND_DIR.parent
+load_dotenv(_BACKEND_DIR / ".env")
+load_dotenv(_PROJECT_ROOT / ".env")
 
 settings = Settings()
 
@@ -42,10 +50,6 @@ def setup_logging():
     app_logger.setLevel(logging.INFO)
     
     return app_logger
-
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
 
 def setup_middleware(app: FastAPI) -> None:
     app.add_middleware(

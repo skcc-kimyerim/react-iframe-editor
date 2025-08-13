@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Send, X } from "lucide-react";
 
-type Role = "user" | "assistant" | "system";
+type Role = "user" | "assistant" | "system" | "error";
 type Message = { role: Role; content: string };
 
 const API_BASE = (import.meta as any).env.VITE_REACT_APP_API_URL + "/api";
@@ -28,7 +28,6 @@ export const Chat: React.FC<ChatProps> = ({
   ]);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [error, setError] = useState<string>("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const isProcessingRef = useRef<boolean>(false); // API 호출 중복 방지
@@ -74,7 +73,6 @@ export const Chat: React.FC<ChatProps> = ({
 
     setInput("");
     setIsSending(true);
-    setError("");
 
     try {
       // 초기 안내 메시지를 제외한 메시지 목록 생성
@@ -93,7 +91,7 @@ export const Chat: React.FC<ChatProps> = ({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "qwen/qwen3-coder:free",
+          model: "qwen/qwen3-coder",
           messages: [...messagesToSend, userMsg],
           selectedFile: selectedFilePath,
           fileContent: fileContent,
@@ -101,8 +99,56 @@ export const Chat: React.FC<ChatProps> = ({
       });
 
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || `Request failed: ${res.status}`);
+        const contentType = res.headers.get("content-type") || "";
+        let detail = "";
+        try {
+          if (contentType.includes("application/json")) {
+            const body = await res.json();
+            detail = body?.detail || body?.message || JSON.stringify(body);
+          } else {
+            const raw = await res.text();
+            try {
+              const parsed = JSON.parse(raw);
+              detail = parsed?.detail || parsed?.message || raw;
+            } catch {
+              detail = raw;
+            }
+          }
+        } catch {
+          detail = "";
+        }
+
+        const status = res.status;
+        const statusText = res.statusText || "";
+        const friendly = (() => {
+          if (status === 429)
+            return "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.";
+          if (status === 400) return "요청이 올바르지 않습니다.";
+          if (status === 401) return "인증이 필요합니다.";
+          if (status === 403) return "권한이 없습니다.";
+          if (status === 404) return "요청한 리소스를 찾을 수 없습니다.";
+          if (status === 408) return "요청 시간이 초과되었습니다.";
+          if (status >= 500)
+            return "서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+          return statusText || "요청 중 오류가 발생했습니다.";
+        })();
+
+        const shorten = (s: string, max = 160) => {
+          if (!s) return "";
+          const trimmed = s.toString().trim();
+          return trimmed.length > max
+            ? trimmed.slice(0, max - 1) + "…"
+            : trimmed;
+        };
+
+        const finalMessage = `⚠️ ${friendly}${
+          detail ? `\n상세: ${shorten(detail)}` : ""
+        }`;
+        setMessages((prev) => [
+          ...prev,
+          { role: "error", content: finalMessage },
+        ]);
+        return;
       }
 
       const data = await res.json();
@@ -114,10 +160,78 @@ export const Chat: React.FC<ChatProps> = ({
         onFileUpdate(data.updatedFile, data.updatedContent);
       }
 
-      setMessages((prev) => [...prev, { role: "assistant", content }]);
+      // code_edit는 초기 짧은 응답을 표시하지 않고, 이후 폴링된 display만 보여줍니다.
+      if (data?.processingType !== "code_edit") {
+        setMessages((prev) => [...prev, { role: "assistant", content }]);
+      }
+
+      // 백그라운드 코드 편집 작업만 폴링 (분석은 파일 변경이 없음)
+      if (data?.processingType === "code_edit" && data?.jobId) {
+        const jobId: string = data.jobId;
+
+        const pollJob = async () => {
+          try {
+            for (let i = 0; i < 60; i++) {
+              const jr = await fetch(`${API_BASE}/chat/jobs/${jobId}`);
+              if (!jr.ok) break;
+              const jd = await jr.json();
+              const status: string = jd?.status || "unknown";
+
+              if (status === "done") {
+                if (jd?.display) {
+                  setMessages((prev) => [
+                    ...prev,
+                    { role: "assistant", content: jd.display as string },
+                  ]);
+                }
+                if (onFileUpdate && jd?.updatedFile && jd?.updatedContent) {
+                  onFileUpdate(
+                    jd.updatedFile as string,
+                    jd.updatedContent as string
+                  );
+                }
+                return;
+              }
+              if (status === "error") {
+                const errMsg = (
+                  jd?.error ||
+                  jd?.message ||
+                  "작업 중 오류가 발생했습니다."
+                ).toString();
+                setMessages((prev) => [
+                  ...prev,
+                  { role: "error", content: `⚠️ ${errMsg}` },
+                ]);
+                return;
+              }
+              await new Promise((r) => setTimeout(r, 1500));
+            }
+          } catch (e: any) {
+            const m = (
+              e?.message || "작업 상태 조회 중 오류가 발생했습니다."
+            ).toString();
+            setMessages((prev) => [
+              ...prev,
+              { role: "error", content: `⚠️ ${m}` },
+            ]);
+          }
+        };
+
+        // 폴링 시작 (비차단)
+        pollJob();
+      }
     } catch (e: any) {
       console.error(e);
-      setError(e?.message || "요청 중 오류가 발생했습니다.");
+      const message = (() => {
+        if (e?.name === "TypeError")
+          return "네트워크 오류가 발생했습니다. 인터넷 연결을 확인해 주세요.";
+        const m = (e?.message || "요청 중 오류가 발생했습니다.").toString();
+        return m.length > 160 ? m.slice(0, 159) + "…" : m;
+      })();
+      setMessages((prev) => [
+        ...prev,
+        { role: "error", content: `⚠️ ${message}` },
+      ]);
     } finally {
       setIsSending(false);
       isProcessingRef.current = false; // 처리 완료
@@ -137,6 +251,8 @@ export const Chat: React.FC<ChatProps> = ({
             className={
               m.role === "user"
                 ? "ml-auto max-w-[85%] rounded-lg bg-indigo-600/90 text-white px-3 py-2 break-words whitespace-pre-wrap"
+                : m.role === "error"
+                ? "mr-auto max-w-[85%] rounded-lg bg-red-500/10 text-red-200 px-3 py-2 border border-red-400/30 break-words whitespace-pre-wrap"
                 : "mr-auto max-w-[85%] rounded-lg bg-white/5 text-slate-200 px-3 py-2 border border-white/10 break-words whitespace-pre-wrap"
             }
           >
@@ -152,12 +268,7 @@ export const Chat: React.FC<ChatProps> = ({
         )}
       </div>
 
-      {/* 에러 */}
-      {error && (
-        <div className="px-3 py-2 text-xs text-red-200 bg-red-500/10 border-t border-red-400/30">
-          {error}
-        </div>
-      )}
+      {/* 에러 말풍선으로 대체됨 */}
 
       {/* 선택된 파일 표시 */}
       {selectedFilePath && (

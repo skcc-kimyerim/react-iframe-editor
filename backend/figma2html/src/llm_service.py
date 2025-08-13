@@ -46,7 +46,7 @@ class LLMService:
                 },
             )
             # model_name = "anthropic/claude-sonnet-4"  # Claude 사용시
-            model_name = "qwen/qwen3-coder:free"  # Qwen 사용시
+            model_name = "qwen/qwen3-coder"  # Qwen 사용시
             return client, model_name
         else:
             # Azure OpenAI 사용
