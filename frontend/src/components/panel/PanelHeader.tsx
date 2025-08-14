@@ -1,4 +1,5 @@
 import React from "react";
+import { RouteDropdown } from "./RouteDropdown";
 
 type ActiveTab = "code" | "preview";
 
@@ -12,6 +13,7 @@ type Props = {
   setRouteInput: (v: string) => void;
   routePath: string;
   setRoutePath: (v: string) => void;
+  availableRoutes: string[];
   runFullProcess: () => Promise<void>;
   updateComponent: () => Promise<void>;
   stopDevServer: () => Promise<void>;
@@ -27,6 +29,7 @@ export const PanelHeader: React.FC<Props> = ({
   setRouteInput,
   routePath,
   setRoutePath,
+  availableRoutes,
   runFullProcess,
   updateComponent,
   stopDevServer,
@@ -82,36 +85,17 @@ export const PanelHeader: React.FC<Props> = ({
         </button>
       </div>
 
-      {/* Route 입력 */}
-      <div className="flex items-center gap-2 min-w-[220px]">
-        <span className="text-xs opacity-80">Route</span>
-        <input
-          className="flex-1 bg-[#0f121f] text-white border border-white/10 rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/20"
-          value={routeInput}
-          onChange={(e) => setRouteInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              const next = (routeInput || "/").trim();
-              setRoutePath(next.length === 0 ? "/" : next);
-            }
-          }}
-          onBlur={() => {
-            const next = (routeInput || "/").trim();
-            setRoutePath(next.length === 0 ? "/" : next);
-          }}
-          placeholder="/"
-        />
-        <button
-          className="inline-flex items-center px-3 py-1.5 rounded-md text-white bg-indigo-600 hover:bg-indigo-700 text-sm font-semibold"
-          onClick={() => {
-            const next = (routeInput || "/").trim();
-            setRoutePath(next.length === 0 ? "/" : next);
-          }}
-          title="Apply route"
-        >
-          Go
-        </button>
-      </div>
+      {/* Route 선택 */}
+      <RouteDropdown
+        label="Route"
+        value={routeInput}
+        options={availableRoutes.length > 0 ? availableRoutes : ["/"]}
+        onChange={(next) => {
+          const v = (next || "/").trim();
+          setRouteInput(v);
+          setRoutePath(v.length === 0 ? "/" : v);
+        }}
+      />
     </div>
   );
 };

@@ -39,6 +39,10 @@ const ReactEditor = () => {
   const [routePath, setRoutePath] = useState("/");
   const [routeInput, setRouteInput] = useState("/");
   const [activeRight, setActiveRight] = useState<"code" | "preview">("code");
+  const [lastSavedPath, setLastSavedPath] = useState("");
+  const [lastSavedCode, setLastSavedCode] = useState("");
+  const isAutoSavingRef = useRef(false);
+  const [availableRoutes, setAvailableRoutes] = useState<string[]>([]);
 
   const API_BASE = (import.meta as any).env.VITE_REACT_APP_API_URL + "/api";
   // routePath가 변경되면 입력값 동기화
@@ -84,6 +88,30 @@ const ReactEditor = () => {
     }
   };
 
+  // App.tsx에서 사용할 수 있는 라우트 목록 파싱
+  const fetchAvailableRoutes = async () => {
+    try {
+      const data = await apiCall(
+        `/file?relativePath=${encodeURIComponent("client/App.tsx")}`
+      );
+      const content: string = data.content ?? "";
+      const routes: string[] = [];
+      const regex = /<Route\s+[^>]*path\s*=\s*(["'])(.*?)\1/gi;
+      let match: RegExpExecArray | null;
+      while ((match = regex.exec(content)) !== null) {
+        const path = (match[2] || "").trim();
+        if (!path || path === "*") continue;
+        const normalized = path.startsWith("/") ? path : `/${path}`;
+        if (!routes.includes(normalized)) routes.push(normalized);
+      }
+      // 기본 루트 보장
+      if (!routes.includes("/")) routes.unshift("/");
+      setAvailableRoutes(routes);
+    } catch (_) {
+      // 프로젝트가 아직 없거나 파일이 없을 수 있으므로 조용히 무시
+    }
+  };
+
   // 프로젝트 초기화
   const initializeProject = async () => {
     console.log("base url", API_BASE);
@@ -97,6 +125,7 @@ const ReactEditor = () => {
     });
     console.log("Project initialized successfully");
     await fetchFileTree();
+    await fetchAvailableRoutes();
   };
 
   // React 개발 서버 시작
@@ -118,6 +147,7 @@ const ReactEditor = () => {
 
     console.log("Development server started:", data.devServerUrl);
     await fetchFileTree();
+    await fetchAvailableRoutes();
   };
 
   // React 개발 서버 중지
@@ -148,6 +178,23 @@ const ReactEditor = () => {
       console.error("Error fetching file tree:", e);
     } finally {
       setLoadingFiles(false);
+      // 파일 트리 변경 시 라우트 목록도 갱신 시도
+      fetchAvailableRoutes().catch(() => {});
+    }
+  };
+
+  // 파일 트리 갱신 (로딩 스피너 없이, 변경된 경우에만 반영)
+  const fetchFileTreeSilently = async () => {
+    try {
+      const data = await apiCall("/files");
+      const newTree = data.tree || [];
+      // 내용이 동일하면 상태 업데이트 생략하여 리렌더/깜박임 방지
+      const same = JSON.stringify(newTree) === JSON.stringify(fileTree);
+      if (!same) {
+        setFileTree(newTree);
+      }
+    } catch (e) {
+      // 조용히 무시 (자동 폴링에서는 에러로 UI 깜박이지 않도록)
     }
   };
 
@@ -161,6 +208,9 @@ const ReactEditor = () => {
       );
       setCode(data.content ?? "");
       setSelectedFilePath(relativePath);
+      // 방금 불러온 내용은 디스크와 동기화된 상태로 간주하여 즉시 저장 트리거를 방지
+      setLastSavedPath(relativePath);
+      setLastSavedCode(data.content ?? "");
     } catch (e) {
       console.error("Error loading file:", e);
     } finally {
@@ -181,10 +231,40 @@ const ReactEditor = () => {
         body: JSON.stringify({ relativePath: selectedFilePath, content: code }),
       });
       console.log("Component updated successfully");
+      // 마지막 저장 시점 갱신
+      setLastSavedPath(selectedFilePath);
+      setLastSavedCode(code);
     } catch (error) {
       console.error("Error updating component:", error);
     }
   };
+
+  // 코드 자동 저장: 입력이 멈춘 뒤 1.5초 후 저장 (파일 선택되어 있고 로딩 중이 아닐 때)
+  useEffect(() => {
+    if (!selectedFilePath) return;
+    if (loadingFileContent) return;
+    // 변경 없음 → 저장 생략
+    if (selectedFilePath === lastSavedPath && code === lastSavedCode) return;
+
+    const timer = setTimeout(async () => {
+      if (isAutoSavingRef.current) return;
+      try {
+        isAutoSavingRef.current = true;
+        await updateComponent();
+      } catch (_) {
+      } finally {
+        isAutoSavingRef.current = false;
+      }
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [
+    code,
+    selectedFilePath,
+    loadingFileContent,
+    lastSavedPath,
+    lastSavedCode,
+  ]);
 
   // 채팅에서 파일 업데이트 처리
   const handleFileUpdate = async (filePath: string, newContent: string) => {
@@ -285,6 +365,7 @@ const ReactEditor = () => {
           setRouteInput={setRouteInput}
           routePath={routePath}
           setRoutePath={setRoutePath}
+          availableRoutes={availableRoutes}
           fetchFileTree={fetchFileTree}
           loadFile={loadFile}
           runFullProcess={runFullProcess}
@@ -293,6 +374,7 @@ const ReactEditor = () => {
           buildPreviewUrl={buildPreviewUrl}
           iframeRef={iframeRef}
           configureMonaco={configureMonaco}
+          refreshFileTreeSilently={fetchFileTreeSilently}
         />
       </div>
     </div>
