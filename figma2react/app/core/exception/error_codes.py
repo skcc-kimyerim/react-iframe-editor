@@ -1,0 +1,13 @@
+from enum import Enum
+
+
+class ErrorCode(str, Enum):
+    # 인증 관련
+    TOKEN_EXPIRED = "TOKEN_EXPIRED"
+    INVALID_AUTH = "INVALID_AUTH"
+    NO_TOKEN = "NO_TOKEN"
+
+    # 일반 오류
+    NOT_DEFINED = "NOT_DEFINED"
+    UNEXPECTED_ERROR = "UNEXPECTED_ERROR"
+    INTERNAL_SERVER_ERROR = "INTERNAL_SERVER_ERROR"
