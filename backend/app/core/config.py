@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     REACT_PROJECT_PATH: Path = Path(__file__).resolve().parents[2] / "dynamic-react-app"
     OPENROUTER_API_KEY: str | None = None
     CORS_ALLOW_ORIGINS: list[str] = ["*"]
+    # 업로드 파일 저장 디렉토리
+    UPLOAD_DIR: Path = Path(__file__).resolve().parents[2] / "uploads"
 
     # pydantic-settings v2 구성: .env 로드 및 불필요한 키 무시
     model_config = SettingsConfigDict(

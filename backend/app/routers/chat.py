@@ -2,7 +2,6 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import logging
 from typing import Any, Dict, List, Optional
-from ..core.config import settings
 from ..services.chat_workflow import ChatWorkflow, get_job_status
 
 router = APIRouter(tags=["chat"])
@@ -19,11 +18,19 @@ class ChatMessage(BaseModel):
     content: str
 
 
+class Attachment(BaseModel):
+    url: str
+    mime: Optional[str] = None
+    name: Optional[str] = None
+    size: Optional[int] = None
+
+
 class ChatRequest(BaseModel):
     model: str
     messages: List[ChatMessage]
     selectedFile: Optional[str] = None   # 선택된 파일 경로
     fileContent: Optional[str] = None    # 현재 파일 내용
+    attachments: Optional[List[Attachment]] = None  # 첨부 파일/이미지 목록
 
 
 class ChatResponse(BaseModel):
@@ -51,6 +58,7 @@ async def chat_proxy(req: ChatRequest):
             selected_file=req.selectedFile,
             file_content=req.fileContent,
             model=req.model,
+            attachments=[a.dict() for a in (req.attachments or [])],
         )
 
         # 결과 구성

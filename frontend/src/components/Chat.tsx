@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Send, X } from "lucide-react";
+import { File, Paperclip, Send, Trash2, X } from "lucide-react";
 
 type Role = "user" | "assistant" | "system" | "error";
 type Message = { role: Role; content: string };
@@ -28,9 +28,26 @@ export const Chat: React.FC<ChatProps> = ({
   ]);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const isProcessingRef = useRef<boolean>(false); // API 호출 중복 방지
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  type LocalAttachment = {
+    id: string;
+    file?: File;
+    previewUrl?: string;
+    uploaded?: {
+      url: string;
+      name?: string;
+      mime?: string;
+      size?: number;
+      stored?: string;
+    };
+    error?: string;
+  };
+  const [attachments, setAttachments] = useState<LocalAttachment[]>([]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
@@ -51,11 +68,88 @@ export const Chat: React.FC<ChatProps> = ({
     el.style.height = Math.min(el.scrollHeight, max) + "px";
   };
 
+  const onPickFiles = () => fileInputRef.current?.click();
+
+  const onFilesSelected: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    const fileList = e.target.files as FileList | null;
+    const files: File[] = fileList ? Array.from(fileList) : [];
+    if (!files.length) return;
+    const next: LocalAttachment[] = files.map((f) => ({
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      file: f,
+      previewUrl: f.type.startsWith("image/")
+        ? URL.createObjectURL(f)
+        : undefined,
+    }));
+    setAttachments((prev) => [...prev, ...next]);
+    // reset input to allow re-selecting same file
+    e.currentTarget.value = "";
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachments((prev) => prev.filter((a) => a.id !== id));
+  };
+
+  const ensureUploaded = async (): Promise<LocalAttachment[]> => {
+    const needUpload = attachments.filter((a) => !a.uploaded && a.file);
+    if (needUpload.length === 0) return attachments;
+    setIsUploading(true);
+    try {
+      const form = new FormData();
+      needUpload.forEach((a) => {
+        if (a.file) form.append("files", a.file);
+      });
+      const res = await fetch(`${API_BASE}/uploads`, {
+        method: "POST",
+        body: form,
+      });
+      if (!res.ok) {
+        const t = await res.text();
+        throw new Error(t || "업로드 실패");
+      }
+      const data = await res.json();
+      const uploaded: any[] = data?.files || [];
+      // merge back by order
+      let idx = 0;
+      const merged = attachments.map((a) => {
+        if (!a.uploaded && a.file) {
+          const u = uploaded[idx++];
+          if (u?.url) {
+            return {
+              ...a,
+              uploaded: {
+                url: u.url as string,
+                name: a.file?.name || u.filename,
+                mime: a.file?.type || u.mime,
+                size: a.file?.size || u.size,
+                stored: u.stored,
+              },
+            };
+          }
+          return { ...a, error: "업로드 응답이 올바르지 않습니다." };
+        }
+        return a;
+      });
+      setAttachments(merged);
+      return merged;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const sendMessage = async () => {
-    if (!input.trim() || isSending || isProcessingRef.current) return; // 중복 호출 방지
+    const hasText = input.trim().length > 0;
+    const hasAttachments = attachments.length > 0;
+    if ((!hasText && !hasAttachments) || isSending || isProcessingRef.current)
+      return; // 중복/빈 전송 방지
 
     isProcessingRef.current = true; // 처리 시작
-    const userMsg: Message = { role: "user", content: input.trim() };
+    const userText = hasText
+      ? input.trim()
+      : hasAttachments
+      ? "(첨부 전송)"
+      : "";
+    const userMsg: Message = { role: "user", content: userText };
 
     // 첫 번째 메시지를 보낼 때 초기 안내 메시지 제거
     setMessages((prev) => {
@@ -75,6 +169,16 @@ export const Chat: React.FC<ChatProps> = ({
     setIsSending(true);
 
     try {
+      // 1) 아직 업로드되지 않은 첨부 업로드
+      const merged = await ensureUploaded();
+      const attsForChat = merged
+        .filter((a) => a.uploaded?.url)
+        .map((a) => ({
+          url: a.uploaded!.url,
+          mime: a.uploaded?.mime,
+          name: a.uploaded?.name,
+          size: a.uploaded?.size,
+        }));
       // 초기 안내 메시지를 제외한 메시지 목록 생성
       const messagesToSend = messages.filter(
         (msg) =>
@@ -95,6 +199,7 @@ export const Chat: React.FC<ChatProps> = ({
           messages: [...messagesToSend, userMsg],
           selectedFile: selectedFilePath,
           fileContent: fileContent,
+          attachments: attsForChat,
         }),
       });
 
@@ -220,6 +325,8 @@ export const Chat: React.FC<ChatProps> = ({
         // 폴링 시작 (비차단)
         pollJob();
       }
+      // 이 메시지 전송에 사용된 첨부는 정리
+      setAttachments([]);
     } catch (e: any) {
       console.error(e);
       const message = (() => {
@@ -270,6 +377,41 @@ export const Chat: React.FC<ChatProps> = ({
 
       {/* 에러 말풍선으로 대체됨 */}
 
+      {/* 첨부 미리보기 / 관리 바 */}
+      {attachments.length > 0 && (
+        <div className="px-3 py-2 border-t border-white/10 bg-white/5">
+          <div className="flex flex-wrap gap-2">
+            {attachments.map((a) => (
+              <div
+                key={a.id}
+                className="relative flex items-center gap-2 rounded-md border border-white/10 bg-[#0b0f1a]/60 px-2 py-1"
+              >
+                {a.previewUrl ? (
+                  <img
+                    src={a.previewUrl}
+                    alt={a.uploaded?.name || a.file?.name || "attachment"}
+                    className="w-12 h-12 object-cover rounded"
+                  />
+                ) : (
+                  <File size={16} />
+                )}
+                <div className="text-xs text-slate-300 max-w-[200px] truncate">
+                  {a.uploaded?.name || a.file?.name}
+                </div>
+                <button
+                  onClick={() => removeAttachment(a.id)}
+                  className="ml-1 p-1 rounded hover:bg-white/10"
+                  title="첨부 제거"
+                  aria-label="Remove attachment"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 선택된 파일 표시 */}
       {selectedFilePath && (
         <div className="px-3 py-2 text-xs text-cyan-200 bg-cyan-500/10 border-t border-cyan-400/30">
@@ -293,6 +435,16 @@ export const Chat: React.FC<ChatProps> = ({
       <div className="p-2 border-t border-white/10 bg-white/5 space-y-2">
         <div className="px-1">
           <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-[#0b0f1a]/60 focus-within:border-cyan-400/40 focus-within:ring-2 focus-within:ring-cyan-400/20 px-3 py-2">
+            <button
+              type="button"
+              onClick={onPickFiles}
+              disabled={isSending || isProcessingRef.current || isUploading}
+              className="inline-flex items-center justify-center h-9 w-9 rounded-lg text-white hover:bg-white/10 disabled:opacity-60"
+              title="파일 첨부"
+              aria-label="Attach files"
+            >
+              <Paperclip size={16} />
+            </button>
             <textarea
               ref={inputRef}
               className="flex-1 bg-transparent text-white placeholder:text-slate-400 border-0 outline-none resize-none text-sm min-h-[44px] max-h-40 py-2.5"
@@ -313,8 +465,9 @@ export const Chat: React.FC<ChatProps> = ({
             <button
               disabled={
                 isSending ||
-                input.trim().length === 0 ||
-                isProcessingRef.current
+                (input.trim().length === 0 && attachments.length === 0) ||
+                isProcessingRef.current ||
+                isUploading
               }
               className="inline-flex items-center justify-center h-9 w-9 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60"
               onClick={sendMessage}
@@ -326,7 +479,16 @@ export const Chat: React.FC<ChatProps> = ({
           </div>
           <div className="text-[11px] text-slate-400/80 mt-1 px-1">
             Enter 전송 · Shift+Enter 줄바꿈
+            {isUploading ? " · 파일 업로드 중..." : ""}
           </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={onFilesSelected}
+            accept="image/*,application/pdf,text/plain,text/markdown,.md,.markdown,application/zip,application/json"
+          />
         </div>
       </div>
     </div>

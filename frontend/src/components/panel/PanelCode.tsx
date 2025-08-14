@@ -101,7 +101,7 @@ export const PanelCode: React.FC<Props> = ({
 
       {/* 코드 에디터 섹션 */}
       <div className="flex flex-1 flex-col min-w-0 min-h-0">
-        <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 bg-white/5 font-mono text-xs text-slate-300 flex-shrink-0">
+        <div className="flex items-center justify-between px-3 py-3 border-b border-white/10 bg-white/5 font-mono text-xs text-slate-300 flex-shrink-0">
           <span>{selectedFilePath || "Select a file from the tree"}</span>
           {loadingFileContent && <span className="text-cyan-400">●</span>}
         </div>
