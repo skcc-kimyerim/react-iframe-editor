@@ -4,6 +4,7 @@ from .code_generation_agent import CodeGenerationAgent
 from .analysis_generation_agent import AnalysisGenerationAgent
 from .file_management_agent import FileManagementAgent
 from .utils import _to_pascal_case, _to_kebab_case
+from .image_utils import process_attachment_for_claude
 
 __all__ = [
     "ChatAgent",
@@ -13,5 +14,6 @@ __all__ = [
     "FileManagementAgent",
     "_to_pascal_case",
     "_to_kebab_case",
+    "process_attachment_for_claude",
 ]
 

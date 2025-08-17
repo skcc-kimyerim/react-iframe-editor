@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import logging
 from typing import Any, Dict, Optional
-
-import httpx
+import anthropic
 from app.core.config import settings
+from .image_utils import process_attachment_for_claude
 
 logger = logging.getLogger("app.chat.workflow")
 
@@ -19,9 +19,9 @@ class AnalysisGenerationAgent:
         enhanced_context: Optional[str],
         attachments: Optional[list[dict]] = None,
     ) -> Dict[str, Any]:
-        api_key = settings.OPENROUTER_API_KEY
+        api_key = settings.ANTHROPIC_API_KEY
         if not api_key:
-            return {"success": False, "message": "OPENROUTER_API_KEY not configured"}
+            return {"success": False, "message": "ANTHROPIC_API_KEY not configured"}
 
         system = (
             "당신은 React/TypeScript 코드 분석가입니다. 사용자의 질문과 선택된 파일, "
@@ -43,42 +43,44 @@ class AnalysisGenerationAgent:
 프로젝트 컨텍스트:
 {enhanced_context}
 """
-        if attachments:
-            lines = []
-            for a in attachments:
-                url = a.get("url")
-                if not url:
-                    continue
-                name = a.get("name") or url.split("/")[-1]
-                mime = a.get("mime") or ""
-                lines.append(f"- {name} ({mime}): {url}")
-            if lines:
-                system += """
-
-첨부 자료(URL):
-""" + "\n".join(lines)
-
-        messages = [
-            {"role": "system", "content": system},
-            {"role": "user", "content": question or "해당 파일을 분석해줘"},
-        ]
-
-        payload = {"model": model, "messages": messages, "stream": False, "temperature": 0.2}
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-            "HTTP-Referer": f"http://localhost:{settings.PORT}",
-            "X-Title": "React Iframe Editor - Analysis",
-        }
 
         try:
-            async with httpx.AsyncClient(timeout=120) as client:
-                r = await client.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload)
-                if r.status_code != 200:
-                    return {"success": False, "message": f"API error: {r.text}"}
-                data = r.json()
-                content = data.get("choices", [{}])[0].get("message", {}).get("content", "") or ""
-                return {"success": True, "content": content.strip()}
+            client = anthropic.Anthropic(api_key=api_key)
+            
+            # 사용자 메시지 구성
+            user_content = []
+            
+            # 질문 텍스트 추가
+            user_content.append({
+                "type": "text",
+                "text": question or "해당 파일을 분석해줘"
+            })
+            
+            # 첨부 파일 처리
+            if attachments:
+                for attachment in attachments:
+                    processed = await process_attachment_for_claude(attachment)
+                    if processed:
+                        user_content.append(processed)
+
+            message = client.messages.create(
+                model=model or "claude-sonnet-4-20250514",
+                max_tokens=2000,
+                system=system,
+                messages=[{
+                    "role": "user",
+                    "content": user_content
+                }]
+            )
+            
+            # 응답 텍스트 추출
+            content = ""
+            for block in message.content:
+                if block.type == "text":
+                    content += block.text
+            
+            return {"success": True, "content": content.strip()}
+            
         except Exception as e:
             logger.exception("Analysis generation failed")
             return {"success": False, "message": str(e)}

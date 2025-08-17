@@ -27,8 +27,11 @@ REACT_DEV_PORT=3002
 # Figma API (선택사항)
 FIGMA_API_TOKEN=your_figma_token_here
 
-# LLM 서비스 설정 (선택사항)
-# OpenRouter 사용 시
+# LLM 서비스 설정 (필수 - 하나만 선택)
+# Anthropic Claude 사용 시 (권장)
+ANTHROPIC_API_KEY=your_anthropic_api_key
+
+# 또는 OpenRouter 사용 시
 OPENROUTER_API_KEY=your_openrouter_api_key
 IS_ROUTER=True
 

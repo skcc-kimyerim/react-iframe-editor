@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import re
 from typing import Any, Dict, Optional
-
-import httpx
+import anthropic
 from app.core.config import settings
 from .utils import _to_pascal_case
+from .image_utils import process_attachment_for_claude
 
 
 class CodeGenerationAgent:
@@ -18,9 +18,9 @@ class CodeGenerationAgent:
         enhanced_context: Optional[str],
         attachments: Optional[list[dict]] = None,
     ) -> Dict[str, Any]:
-        api_key = settings.OPENROUTER_API_KEY
+        api_key = settings.ANTHROPIC_API_KEY
         if not api_key:
-            return {"success": False, "message": "OPENROUTER_API_KEY not configured"}
+            return {"success": False, "message": "ANTHROPIC_API_KEY not configured"}
 
         system = "당신은 React/TypeScript 코드 전문가입니다."
         if selected_file and file_content is not None:
@@ -35,18 +35,6 @@ class CodeGenerationAgent:
 {enhanced_context}
 
 위 컨텍스트를 참고하여 관련 파일 간의 관계, 코드 스타일, 폴더 구조를 고려해서 답변하세요."""
-        if attachments:
-            lines = []
-            for a in attachments:
-                url = a.get("url")
-                if not url:
-                    continue
-                name = a.get("name") or url.split("/")[-1]
-                mime = a.get("mime") or ""
-                lines.append(f"- {name} ({mime}): {url}")
-            if lines:
-                system += "\n\n첨부 자료(URL):\n" + "\n".join(lines)
-
         system += """
 사용자의 요청에 따라 코드를 수정해야 하는 경우:
 1) 먼저 수정 내용에 대한 간단한 설명
@@ -66,30 +54,43 @@ class CodeGenerationAgent:
 - 페이지 파일명은 반드시 PascalCase를 사용하세요 (예: AboutUs.tsx).
 """
 
-        messages = [
-            {"role": "system", "content": system},
-            {"role": "user", "content": question},
-        ]
+        try:
+            client = anthropic.Anthropic(api_key=api_key)
+            
+            # 사용자 메시지 구성
+            user_content = []
+            
+            # 질문 텍스트 추가
+            user_content.append({
+                "type": "text",
+                "text": question
+            })
+            
+            # 첨부 파일 처리
+            if attachments:
+                for attachment in attachments:
+                    processed = await process_attachment_for_claude(attachment)
+                    if processed:
+                        user_content.append(processed)
 
-        payload = {
-            "model": model,
-            "messages": messages,
-            "stream": False,
-        }
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-            "HTTP-Referer": f"http://localhost:{settings.PORT}",
-            "X-Title": "React Iframe Editor - Agents",
-        }
-
-        async with httpx.AsyncClient(timeout=120) as client:
-            r = await client.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload)
-            if r.status_code != 200:
-                return {"success": False, "message": f"API error: {r.text}"}
-
-            data = r.json()
-            content = data.get("choices", [{}])[0].get("message", {}).get("content", "") or ""
+            message = client.messages.create(
+                model=model or "claude-sonnet-4-20250514",
+                max_tokens=3000,
+                system=system,
+                messages=[{
+                    "role": "user",
+                    "content": user_content
+                }]
+            )
+            
+            # 응답 텍스트 추출
+            content = ""
+            for block in message.content:
+                if block.type == "text":
+                    content += block.text
+        
+        except Exception as e:
+            return {"success": False, "message": f"Claude API error: {str(e)}"}
 
         file_path = None
         header_path_match = re.search(

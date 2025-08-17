@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     # backend/app/core/config.py → backend 디렉토리로 올라가서 동적 프로젝트 경로 지정
     REACT_PROJECT_PATH: Path = Path(__file__).resolve().parents[2] / "dynamic-react-app"
     OPENROUTER_API_KEY: str | None = None
+    ANTHROPIC_API_KEY: str | None = None
     CORS_ALLOW_ORIGINS: list[str] = ["*"]
     # 업로드 파일 저장 디렉토리
     UPLOAD_DIR: Path = Path(__file__).resolve().parents[2] / "uploads"
