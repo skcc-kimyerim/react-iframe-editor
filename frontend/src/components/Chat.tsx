@@ -1,8 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { File, Paperclip, Send, Trash2, X } from 'lucide-react';
-
-type Role = 'user' | 'assistant' | 'system' | 'error';
-type Message = { role: Role; content: string };
+import { useProjectStore, Message } from '../stores/projectStore';
 
 const API_BASE = (import.meta as any).env.VITE_REACT_APP_API_URL + '/api';
 
@@ -14,12 +12,8 @@ interface ChatProps {
 }
 
 export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFileUpdate, onClearSelectedFile }) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: 'assistant',
-      content: '안녕하세요! 좌측 채팅창에서 질문을 보내면 우측 Code/Preview와 함께 작업을 도와드릴게요.',
-    },
-  ]);
+  const { currentProject, addMessage } = useProjectStore();
+  const messages = currentProject?.chatHistory || [];
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -138,18 +132,14 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
     const userText = hasText ? input.trim() : hasAttachments ? '(첨부 전송)' : '';
     const userMsg: Message = { role: 'user', content: userText };
 
-    // 첫 번째 메시지를 보낼 때 초기 안내 메시지 제거
-    setMessages((prev) => {
-      // 초기 안내 메시지가 있다면 제거하고 사용자 메시지만 추가
-      if (
-        prev.length === 1 &&
-        prev[0].role === 'assistant' &&
-        prev[0].content === '안녕하세요! 좌측 채팅창에서 질문을 보내면 우측 Code/Preview와 함께 작업을 도와드릴게요.'
-      ) {
-        return [userMsg];
-      }
-      return [...prev, userMsg];
-    });
+    // 프로젝트가 없으면 메시지 전송을 막음
+    if (!currentProject) {
+      console.warn('프로젝트가 선택되지 않았습니다.');
+      return;
+    }
+
+    // 사용자 메시지를 스토어에 추가
+    addMessage(userMsg);
 
     setInput('');
     setIsSending(true);
@@ -185,6 +175,7 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
           selectedFile: selectedFilePath,
           fileContent: fileContent,
           attachments: attsForChat,
+          projectName: currentProject.name,
         }),
       });
 
@@ -228,7 +219,7 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
         };
 
         const finalMessage = `⚠️ ${friendly}${detail ? `\n상세: ${shorten(detail)}` : ''}`;
-        setMessages((prev) => [...prev, { role: 'error', content: finalMessage }]);
+        addMessage({ role: 'error', content: finalMessage });
         return;
       }
 
@@ -242,7 +233,7 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
 
       // code_edit는 초기 짧은 응답을 표시하지 않고, 이후 폴링된 display만 보여줍니다.
       if (data?.processingType !== 'code_edit') {
-        setMessages((prev) => [...prev, { role: 'assistant', content }]);
+        addMessage({ role: 'assistant', content });
       }
 
       // 백그라운드 코드 편집 작업만 폴링 (분석은 파일 변경이 없음)
@@ -259,7 +250,7 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
 
               if (status === 'done') {
                 if (jd?.display) {
-                  setMessages((prev) => [...prev, { role: 'assistant', content: jd.display as string }]);
+                  addMessage({ role: 'assistant', content: jd.display as string });
                 }
                 if (onFileUpdate && jd?.updatedFile && jd?.updatedContent) {
                   onFileUpdate(jd.updatedFile as string, jd.updatedContent as string);
@@ -268,14 +259,14 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
               }
               if (status === 'error') {
                 const errMsg = (jd?.error || jd?.message || '작업 중 오류가 발생했습니다.').toString();
-                setMessages((prev) => [...prev, { role: 'error', content: `⚠️ ${errMsg}` }]);
+                addMessage({ role: 'error', content: `⚠️ ${errMsg}` });
                 return;
               }
               await new Promise((r) => setTimeout(r, 1500));
             }
           } catch (e: any) {
             const m = (e?.message || '작업 상태 조회 중 오류가 발생했습니다.').toString();
-            setMessages((prev) => [...prev, { role: 'error', content: `⚠️ ${m}` }]);
+            addMessage({ role: 'error', content: `⚠️ ${m}` });
           }
         };
 
@@ -289,7 +280,7 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
         const m = (e?.message || '요청 중 오류가 발생했습니다.').toString();
         return m.length > 160 ? m.slice(0, 159) + '…' : m;
       })();
-      setMessages((prev) => [...prev, { role: 'error', content: `⚠️ ${message}` }]);
+      addMessage({ role: 'error', content: `⚠️ ${message}` });
     } finally {
       setIsSending(false);
       isProcessingRef.current = false; // 처리 완료

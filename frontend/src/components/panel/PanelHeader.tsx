@@ -1,7 +1,8 @@
-import React from "react";
-import { RouteDropdown } from "./RouteDropdown";
+import React from 'react';
+import { RouteDropdown } from './RouteDropdown';
+import { useProjectStore } from '../../stores/projectStore';
 
-type ActiveTab = "code" | "preview";
+type ActiveTab = 'code' | 'preview';
 
 type Props = {
   activeRight: ActiveTab;
@@ -34,41 +35,51 @@ export const PanelHeader: React.FC<Props> = ({
   updateComponent,
   stopDevServer,
 }) => {
+  const { currentProject } = useProjectStore();
+  const projectName = currentProject?.name || 'Unknown Project';
   return (
     <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-white/10 bg-white/5">
-      {/* 탭 */}
-      <div className="flex items-center gap-2">
-        <button
-          className={`px-3 py-1.5 text-sm rounded-md border ${
-            activeRight === "code"
-              ? "bg-indigo-600 text-white border-transparent"
-              : "bg-transparent text-slate-200 border-white/15 hover:bg-white/10"
-          }`}
-          onClick={() => setActiveRight("code")}
-        >
-          Code
-        </button>
-        <button
-          className={`px-3 py-1.5 text-sm rounded-md border ${
-            activeRight === "preview"
-              ? "bg-indigo-600 text-white border-transparent"
-              : "bg-transparent text-slate-200 border-white/15 hover:bg-white/10"
-          }`}
-          onClick={() => setActiveRight("preview")}
-        >
-          Preview
-        </button>
+      {/* 프로젝트 정보 및 탭 */}
+      <div className="flex items-center gap-4">
+        <div className="text-sm text-white/70">
+          📁 <span className="font-semibold text-white">{projectName}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            className={`px-3 py-1.5 text-sm rounded-md border ${
+              activeRight === 'code'
+                ? 'bg-indigo-600 text-white border-transparent'
+                : 'bg-transparent text-slate-200 border-white/15 hover:bg-white/10'
+            }`}
+            onClick={() => setActiveRight('code')}
+          >
+            Code
+          </button>
+          <button
+            className={`px-3 py-1.5 text-sm rounded-md border ${
+              activeRight === 'preview'
+                ? 'bg-indigo-600 text-white border-transparent'
+                : 'bg-transparent text-slate-200 border-white/15 hover:bg-white/10'
+            }`}
+            onClick={() => setActiveRight('preview')}
+          >
+            Preview
+          </button>
+        </div>
       </div>
 
       {/* 액션 버튼 */}
       <div className="flex items-center gap-2">
-        <button
-          onClick={runFullProcess}
-          disabled={loading}
-          className="inline-flex items-center gap-2 px-3 py-2 rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-sm font-semibold border border-transparent"
-        >
-          {loading ? "⏳ Setting up..." : "🚀 Initialize & Start"}
-        </button>
+        {!currentProject?.isInitialized && (
+          <button
+            onClick={runFullProcess}
+            disabled={loading}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-sm font-semibold border border-transparent"
+          >
+            {loading ? '⏳ Setting up...' : '🚀 Initialize Project'}
+          </button>
+        )}
+
         <button
           onClick={updateComponent}
           disabled={!isServerRunning || !selectedFilePath}
@@ -76,6 +87,7 @@ export const PanelHeader: React.FC<Props> = ({
         >
           💾 Save File
         </button>
+
         <button
           onClick={stopDevServer}
           disabled={!isServerRunning}
@@ -89,11 +101,11 @@ export const PanelHeader: React.FC<Props> = ({
       <RouteDropdown
         label="Route"
         value={routeInput}
-        options={availableRoutes.length > 0 ? availableRoutes : ["/"]}
+        options={availableRoutes.length > 0 ? availableRoutes : ['/']}
         onChange={(next) => {
-          const v = (next || "/").trim();
+          const v = (next || '/').trim();
           setRouteInput(v);
-          setRoutePath(v.length === 0 ? "/" : v);
+          setRoutePath(v.length === 0 ? '/' : v);
         }}
       />
     </div>

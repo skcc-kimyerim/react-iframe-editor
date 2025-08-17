@@ -219,6 +219,6 @@ $RECYCLE.BIN/
 
 node_modules
 backend/venv
-backend/dynamic-react-app
+backend/projects
 backend/output
 __pycache__

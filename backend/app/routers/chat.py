@@ -31,6 +31,7 @@ class ChatRequest(BaseModel):
     selectedFile: Optional[str] = None   # 선택된 파일 경로
     fileContent: Optional[str] = None    # 현재 파일 내용
     attachments: Optional[List[Attachment]] = None  # 첨부 파일/이미지 목록
+    projectName: Optional[str] = None    # 프로젝트 이름
 
 
 class ChatResponse(BaseModel):
@@ -59,6 +60,7 @@ async def chat_proxy(req: ChatRequest):
             file_content=req.fileContent,
             model=req.model,
             attachments=[a.dict() for a in (req.attachments or [])],
+            project_name=req.projectName,
         )
 
         # 결과 구성

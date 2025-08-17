@@ -42,6 +42,7 @@ class ChatState(TypedDict):
     file_content: Optional[str]
     model: str
     attachments: Optional[List[Dict[str, Any]]]
+    project_name: Optional[str]
     result: Dict[str, Any] | None
 
 def _classify(chat_type_hint: Optional[str], user_input: str, selected_file: Optional[str]) -> str:
@@ -104,7 +105,9 @@ def create_graph():
 
     async def node_code_analyze(state: ChatState) -> ChatState:
         # 파일/코드 분석만 수행. 파일 수정 없음
-        project_root = str(settings.REACT_PROJECT_PATH)
+        project_name = state.get("project_name") or "default-project"
+        base_projects_dir = settings.REACT_PROJECT_PATH.parent / "projects"
+        project_root = str(base_projects_dir / project_name)
         analysis = CodeAnalysisAgent(project_root)
         ctx = analysis.build_context(
             question=state["user_input"],
@@ -172,7 +175,9 @@ async def _run_background_job(job_id: str, state: ChatState) -> None:
         _JOBS[job_id]["status"] = "running"
         _JOBS[job_id]["message"] = "코드 분석 중..."
 
-        project_root = str(settings.REACT_PROJECT_PATH)
+        project_name = state.get("project_name") or "default-project"
+        base_projects_dir = settings.REACT_PROJECT_PATH.parent / "projects"
+        project_root = str(base_projects_dir / project_name)
         analysis = CodeAnalysisAgent(project_root)
         ctx = analysis.build_context(
             question=state["user_input"],
@@ -212,7 +217,8 @@ async def _run_background_job(job_id: str, state: ChatState) -> None:
 
         _JOBS[job_id]["message"] = "파일 적용 중..."
         # 파일 생성 위치 검증: 새 파일일 가능성일 때만 검사 강화
-        is_new_file = target_file and not resolve_src_path(target_file).exists()
+        project_name = state.get("project_name") or "default-project"
+        is_new_file = target_file and not resolve_src_path(target_file, project_name).exists()
         if is_new_file:
             # 확장자 기반으로 페이지/컴포넌트 추정 없이, 경로 규칙만 강제
             if target_file.startswith("client/pages/"):
@@ -232,7 +238,7 @@ async def _run_background_job(job_id: str, state: ChatState) -> None:
                 return
 
         file_mgr = FileManagementAgent()
-        applied = await file_mgr.apply_change(target_file, gen["updated_content"])
+        applied = await file_mgr.apply_change(target_file, gen["updated_content"], project_name)
         if not applied.get("success"):
             _JOBS[job_id]["status"] = "error"
             _JOBS[job_id]["error"] = applied.get("error", "파일 저장 실패")
@@ -262,6 +268,7 @@ class ChatWorkflow:
         file_content: Optional[str] = None,
         model: str = "qwen/qwen3-coder",
         attachments: Optional[List[Dict[str, Any]]] = None,
+        project_name: Optional[str] = None,
     ) -> Dict[str, Any]:
         initial: ChatState = {
             "messages": messages,
@@ -271,6 +278,7 @@ class ChatWorkflow:
             "file_content": file_content,
             "model": model,
             "attachments": attachments or [],
+            "project_name": project_name,
             "result": None,
         }
         final = await self.workflow.ainvoke(initial)

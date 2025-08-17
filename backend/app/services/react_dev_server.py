@@ -191,5 +191,10 @@ class ReactDevServerManager:
         return list(self._buffer)
 
 
+def create_react_manager(project_path: Path, port: int) -> ReactDevServerManager:
+    """프로젝트별 React 개발 서버 관리자 생성"""
+    return ReactDevServerManager(project_path, port)
+
+# 기본 React 관리자 (하위 호환성)
 react_manager = ReactDevServerManager(settings.REACT_PROJECT_PATH, settings.REACT_DEV_PORT)
 
