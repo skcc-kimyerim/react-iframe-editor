@@ -8,6 +8,7 @@ export type Message = {
 
 export type ProjectState = {
   name: string;
+  projectType: 'figma' | 'basic';
   isInitialized: boolean;
   isServerRunning: boolean;
   chatHistory: Message[];
@@ -29,10 +30,11 @@ export type ProjectStore = {
   projects: Record<string, ProjectState>;
 
   // 프로젝트 관련 액션
-  createProject: (name: string) => void;
+  createProject: (name: string, projectType?: 'figma' | 'basic') => void;
   selectProject: (name: string) => void;
   deleteProject: (name: string) => void;
   clearCurrentProject: () => void;
+  setProjectType: (projectType: 'figma' | 'basic') => void;
 
   // 현재 프로젝트 상태 업데이트
   updateCurrentProject: (updates: Partial<ProjectState>) => void;
@@ -59,14 +61,15 @@ export type ProjectStore = {
   hasProjects: () => boolean;
 };
 
-const createDefaultProject = (name: string): ProjectState => ({
+const createDefaultProject = (name: string, projectType: 'figma' | 'basic' = 'basic'): ProjectState => ({
   name,
+  projectType,
   isInitialized: false,
   isServerRunning: false,
   chatHistory: [
     {
       role: 'assistant',
-      content: `안녕하세요! "${name}" 프로젝트에 오신 것을 환영합니다. 질문을 보내면 프로젝트 생성과 개발을 도와드릴게요.`,
+      content: `안녕하세요! "${name}" 프로젝트에 오신 것을 환영합니다. 질문을 보내면 프로젝트 생성과 개발을 도워드릴게요.`,
     },
   ],
   devServerUrl: '',
@@ -85,11 +88,11 @@ export const useProjectStore = create<ProjectStore>()(
       currentProject: null,
       projects: {},
 
-      createProject: (name: string) => {
+      createProject: (name: string, projectType: 'figma' | 'basic' = 'basic') => {
         const trimmedName = name.trim();
         if (!trimmedName) return;
 
-        const newProject = createDefaultProject(trimmedName);
+        const newProject = createDefaultProject(trimmedName, projectType);
 
         set((state) => ({
           projects: {
@@ -131,6 +134,10 @@ export const useProjectStore = create<ProjectStore>()(
           ...state,
           currentProject: null,
         }));
+      },
+
+      setProjectType: (projectType: 'figma' | 'basic') => {
+        get().updateCurrentProject({ projectType });
       },
 
       updateCurrentProject: (updates: Partial<ProjectState>) => {

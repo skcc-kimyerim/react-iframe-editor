@@ -158,6 +158,7 @@ const ReactEditor = () => {
         description: `${currentProject.name} 프로젝트`,
         app_name: currentProject.name.replace(/\s+/g, '-').toLowerCase(),
         title: currentProject.name,
+        projectType: currentProject?.projectType || 'basic',
       }),
     });
     console.log('Project initialized successfully');
@@ -227,7 +228,7 @@ const ReactEditor = () => {
     }
   };
 
-  // 파일 트리 갱신 (로딩 스피너 없이, 변경된 경우에만 반영)
+  // 파일 트리 갱신
   const fetchFileTreeSilently = async () => {
     try {
       const projectName = currentProject?.name || 'default-project';
@@ -386,7 +387,11 @@ const ReactEditor = () => {
           /* 프로젝트 선택 화면 */
           <div className="flex-1 m-3 rounded-xl overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center">
             <div className="w-full max-w-md">
-              <ProjectSelector onProjectSelected={() => {}} />
+              <ProjectSelector
+                onProjectSelected={() => {
+                  console.log('Project selected with type:', currentProject?.projectType);
+                }}
+              />
             </div>
           </div>
         ) : (
