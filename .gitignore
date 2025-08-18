@@ -219,6 +219,8 @@ $RECYCLE.BIN/
 
 node_modules
 backend/venv
+backend/.venv
 backend/projects
 backend/output
+backend/uploads
 __pycache__
