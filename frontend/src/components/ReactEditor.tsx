@@ -72,6 +72,25 @@ const ReactEditor = () => {
     setRouteInput(routePath || "/");
   }, [routePath]);
 
+  // 프로젝트가 선택되었을 때 자동으로 서버 시작
+  useEffect(() => {
+    const autoStartServer = async () => {
+      if (currentProject && currentProject.isInitialized && !isServerRunning) {
+        try {
+          console.log("Auto-starting server for selected project...");
+          await startDevServer();
+        } catch (error) {
+          console.error("Error auto-starting server:", error);
+        }
+      }
+    };
+
+    // 프로젝트가 변경될 때만 실행
+    if (currentProject) {
+      autoStartServer();
+    }
+  }, [currentProject?.name]);
+
   const buildPreviewUrl = (baseUrl, path) => {
     if (!baseUrl) return "";
     const normalizedBase = baseUrl.replace(/\/+$/, "");
@@ -210,6 +229,24 @@ const ReactEditor = () => {
       console.log("Development server stopped");
     } catch (error) {
       console.error("Error stopping dev server:", error);
+    }
+  };
+
+  // 프로젝트 변경 시 서버 중단 함수
+  const handleProjectChange = async () => {
+    try {
+      // 현재 서버가 실행 중이면 중단
+      if (isServerRunning && currentProject) {
+        console.log("Stopping current dev server before project change...");
+        await stopDevServer();
+      }
+
+      // 프로젝트 선택 화면으로 이동
+      clearCurrentProject();
+    } catch (error) {
+      console.error("Error stopping server during project change:", error);
+      // 에러가 있어도 프로젝트 변경은 진행
+      clearCurrentProject();
     }
   };
 
@@ -376,7 +413,7 @@ const ReactEditor = () => {
           </h1>
           {currentProject && (
             <button
-              onClick={clearCurrentProject}
+              onClick={handleProjectChange}
               className="px-3 py-1.5 text-xs rounded-md bg-white/10 text-white/80 hover:bg-white/20 hover:text-white transition-colors"
             >
               📁 프로젝트 변경
