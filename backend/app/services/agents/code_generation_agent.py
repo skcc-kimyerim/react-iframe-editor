@@ -75,7 +75,7 @@ class CodeGenerationAgent:
 
             message = client.messages.create(
                 model=model or "claude-sonnet-4-20250514",
-                max_tokens=3000,
+                max_tokens=10000,
                 system=system,
                 messages=[{
                     "role": "user",
