@@ -1,8 +1,8 @@
-import React from 'react';
-import { RouteDropdown } from './RouteDropdown';
-import { useProjectStore } from '../../stores/projectStore';
+import React from "react";
+import { RouteDropdown } from "./RouteDropdown";
+import { useProjectStore } from "../../stores/projectStore";
 
-type ActiveTab = 'code' | 'preview';
+type ActiveTab = "code" | "preview";
 
 type Props = {
   activeRight: ActiveTab;
@@ -36,7 +36,7 @@ export const PanelHeader: React.FC<Props> = ({
   stopDevServer,
 }) => {
   const { currentProject } = useProjectStore();
-  const projectName = currentProject?.name || 'Unknown Project';
+  const projectName = currentProject?.name || "Unknown Project";
   return (
     <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-white/10 bg-white/5">
       {/* 프로젝트 정보 및 탭 */}
@@ -47,21 +47,21 @@ export const PanelHeader: React.FC<Props> = ({
         <div className="flex items-center gap-2">
           <button
             className={`px-3 py-1.5 text-sm rounded-md border ${
-              activeRight === 'code'
-                ? 'bg-indigo-600 text-white border-transparent'
-                : 'bg-transparent text-slate-200 border-white/15 hover:bg-white/10'
+              activeRight === "code"
+                ? "bg-indigo-600 text-white border-transparent"
+                : "bg-transparent text-slate-200 border-white/15 hover:bg-white/10"
             }`}
-            onClick={() => setActiveRight('code')}
+            onClick={() => setActiveRight("code")}
           >
             Code
           </button>
           <button
             className={`px-3 py-1.5 text-sm rounded-md border ${
-              activeRight === 'preview'
-                ? 'bg-indigo-600 text-white border-transparent'
-                : 'bg-transparent text-slate-200 border-white/15 hover:bg-white/10'
+              activeRight === "preview"
+                ? "bg-indigo-600 text-white border-transparent"
+                : "bg-transparent text-slate-200 border-white/15 hover:bg-white/10"
             }`}
-            onClick={() => setActiveRight('preview')}
+            onClick={() => setActiveRight("preview")}
           >
             Preview
           </button>
@@ -70,13 +70,17 @@ export const PanelHeader: React.FC<Props> = ({
 
       {/* 액션 버튼 */}
       <div className="flex items-center gap-2">
-        {!currentProject?.isInitialized && (
+        {!isServerRunning && (
           <button
             onClick={runFullProcess}
             disabled={loading}
             className="inline-flex items-center gap-2 px-3 py-2 rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-sm font-semibold border border-transparent"
           >
-            {loading ? '⏳ Setting up...' : '🚀 Initialize Project'}
+            {loading
+              ? "⏳ Setting up..."
+              : currentProject?.isInitialized
+              ? "🚀 Start Server"
+              : "🚀 Initialize Project"}
           </button>
         )}
 
@@ -101,11 +105,11 @@ export const PanelHeader: React.FC<Props> = ({
       <RouteDropdown
         label="Route"
         value={routeInput}
-        options={availableRoutes.length > 0 ? availableRoutes : ['/']}
+        options={availableRoutes.length > 0 ? availableRoutes : ["/"]}
         onChange={(next) => {
-          const v = (next || '/').trim();
+          const v = (next || "/").trim();
           setRouteInput(v);
-          setRoutePath(v.length === 0 ? '/' : v);
+          setRoutePath(v.length === 0 ? "/" : v);
         }}
       />
     </div>

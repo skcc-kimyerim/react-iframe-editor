@@ -12,7 +12,8 @@
     "monaco-editor": "^0.52.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "zustand": "^5.0.7"
   },
   "scripts": {
     "dev": "vite",
