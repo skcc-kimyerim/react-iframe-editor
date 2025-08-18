@@ -5,6 +5,7 @@ from core.config import get_setting
 from core.db.database import close_db, init_db
 from core.log.logging import get_logging
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from figma2code.web.router import router
 
 settings = get_setting()
@@ -30,6 +31,15 @@ app = FastAPI(
     description="GenAI Boilerplate",
     version="1.0.0",
     lifespan=lifespan,
+)
+
+# CORS 미들웨어 추가
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 프로덕션에서는 구체적인 도메인으로 제한
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # 라우터 등록

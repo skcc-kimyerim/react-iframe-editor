@@ -205,6 +205,9 @@ export const Chat: React.FC<ChatProps> = ({
     }
   };
 
+  const FIGMA_URL_PATTERN =
+    /https:\/\/www\.figma\.com\/(?:file|design)\/([a-zA-Z0-9]+)\/[^?\s]*(?:\?.*)?/g;
+
   const sendMessage = async () => {
     const hasText = input.trim().length > 0;
     const hasAttachments = attachments.length > 0;
@@ -225,6 +228,36 @@ export const Chat: React.FC<ChatProps> = ({
       return;
     }
 
+    // Figma URL 감지 및 처리
+    if (hasText) {
+      const figmaUrls = userText.match(FIGMA_URL_PATTERN);
+      if (figmaUrls && figmaUrls.length > 0) {
+        const figmaUrl = figmaUrls[0];
+        const lowerText = userText.toLowerCase();
+
+        // 컴포넌트 생성 요청인지 확인
+        if (
+          lowerText.includes("컴포넌트") &&
+          (lowerText.includes("만들어") ||
+            lowerText.includes("생성") ||
+            lowerText.includes("변환"))
+        ) {
+          await handleFigmaComponentRequest(figmaUrl, userText, userMsg);
+          return;
+        }
+
+        // 페이지 생성 요청인지 확인
+        if (
+          lowerText.includes("페이지") &&
+          (lowerText.includes("만들어") ||
+            lowerText.includes("생성") ||
+            lowerText.includes("변환"))
+        ) {
+          await handleFigmaPageRequest(figmaUrl, userText, userMsg);
+          return;
+        }
+      }
+    }
     // 사용자 메시지를 스토어에 추가
     addMessage(userMsg);
 
@@ -409,7 +442,130 @@ export const Chat: React.FC<ChatProps> = ({
       setAttachments([]);
     }
   };
+  // Figma 컴포넌트 생성 요청 처리
+  const handleFigmaComponentRequest = async (
+    figmaUrl: string,
+    userText: string,
+    userMsg: Message
+  ) => {
+    addMessage(userMsg);
+    setInput("");
+    setIsSending(true);
 
+    try {
+      addMessage({
+        role: "assistant",
+        content: "🎨 Figma 디자인에서 React 컴포넌트를 생성하고 있습니다...",
+      });
+
+      const response = await fetch(
+        `http://localhost:8001/chat/convert/react-component`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            figma_url: figmaUrl,
+            output: `backend/projects/${currentProject.name}/components/figma`,
+            embed_shapes: true,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `컴포넌트 생성 실패: ${response.status} ${response.statusText}`
+        );
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        addMessage({
+          role: "assistant",
+          content: `✅ React 컴포넌트가 성공적으로 생성되었습니다!\n\n${data.message}`,
+        });
+      } else {
+        addMessage({
+          role: "error",
+          content: `⚠️ 컴포넌트 생성 중 오류가 발생했습니다:\n${data.message}`,
+        });
+      }
+    } catch (error: any) {
+      console.error("Figma component conversion error:", error);
+      addMessage({
+        role: "error",
+        content: `⚠️ 컴포넌트 생성 중 오류가 발생했습니다: ${error.message}`,
+      });
+    } finally {
+      setIsSending(false);
+      isProcessingRef.current = false;
+      setAttachments([]);
+    }
+  };
+
+  // Figma 페이지 생성 요청 처리
+  const handleFigmaPageRequest = async (
+    figmaUrl: string,
+    userText: string,
+    userMsg: Message
+  ) => {
+    addMessage(userMsg);
+    setInput("");
+    setIsSending(true);
+
+    try {
+      addMessage({
+        role: "assistant",
+        content: "🎨 Figma 디자인에서 페이지를 생성하고 있습니다...",
+      });
+
+      const response = await fetch(`http://localhost:8001/chat/create-page`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          figma_url: figmaUrl,
+          output: `backend/projects/${currentProject.name}/pages/`,
+          pages: [], // 기본값, 필요시 수정
+          components: `backend/projects/${currentProject.name}/components/figma`, // 기본값, 필요시 수정
+          embed_shapes: true,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `페이지 생성 실패: ${response.status} ${response.statusText}`
+        );
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        addMessage({
+          role: "assistant",
+          content: `✅ 페이지가 성공적으로 생성되었습니다!\n\n${data.message}`,
+        });
+      } else {
+        addMessage({
+          role: "error",
+          content: `⚠️ 페이지 생성 중 오류가 발생했습니다:\n${data.message}`,
+        });
+      }
+    } catch (error: any) {
+      console.error("Figma page conversion error:", error);
+      addMessage({
+        role: "error",
+        content: `⚠️ 페이지 생성 중 오류가 발생했습니다: ${error.message}`,
+      });
+    } finally {
+      setIsSending(false);
+      isProcessingRef.current = false;
+      setAttachments([]);
+    }
+  };
   return (
     <div className="flex h-full flex-col min-h-0">
       {/* 메시지 목록 */}

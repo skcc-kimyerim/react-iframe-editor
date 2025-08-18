@@ -462,7 +462,7 @@ const ReactEditor = () => {
             {/* 왼쪽: Chat 패널 */}
             <div className="w-[360px] m-3 rounded-xl overflow-hidden bg-white/5 border border-white/10 flex flex-col min-h-0">
               <div className="px-4 py-3 border-b border-white/10 bg-white/5 font-semibold flex-shrink-0">
-                Chat - {currentProject?.name}
+                Chat
               </div>
               <div className="flex-1 overflow-hidden p-3 min-h-0">
                 <Chat

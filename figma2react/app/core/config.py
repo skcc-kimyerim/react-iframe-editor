@@ -14,7 +14,7 @@ class Settings(BaseSettings):
 
     # 앱 관련 설정
     APP_HOST: str = "0.0.0.0"
-    APP_PORT: int = 8000
+    APP_PORT: int = 8001
 
     # 데이터베이스 관련 설정
     DATABASE_URL: str = "sqlite+aiosqlite:///test.db"
