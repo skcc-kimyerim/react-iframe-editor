@@ -4,7 +4,7 @@ from pathlib import Path
 import logging
 
 from ..core.config import settings
-from ..services.react_dev_server import react_manager, create_react_manager
+from ..services.react_dev_server import create_react_manager
 from ..services.template_service import get_template_service
 
 

@@ -42,7 +42,7 @@ class ChatState(TypedDict):
     file_content: Optional[str]
     model: str
     attachments: Optional[List[Dict[str, Any]]]
-    project_name: Optional[str]
+    project_name: str              # 필수값으로 변경
     result: Dict[str, Any] | None
 
 def _classify(chat_type_hint: Optional[str], user_input: str, selected_file: Optional[str]) -> str:
@@ -105,7 +105,7 @@ def create_graph():
 
     async def node_code_analyze(state: ChatState) -> ChatState:
         # 파일/코드 분석만 수행. 파일 수정 없음
-        project_name = state.get("project_name") or "default-project"
+        project_name = state["project_name"]
         base_projects_dir = settings.REACT_PROJECT_PATH.parent / "projects"
         project_root = str(base_projects_dir / project_name)
         analysis = CodeAnalysisAgent(project_root)
@@ -147,7 +147,7 @@ def create_graph():
             "result": {
                 "success": True,
                 "processing_type": "code_edit",
-                "chat_message": "",  # 프론트에서 초기 메시지 표시 안 함
+                "chat_message": "",
                 "job_id": job_id,
             },
         }
@@ -175,7 +175,7 @@ async def _run_background_job(job_id: str, state: ChatState) -> None:
         _JOBS[job_id]["status"] = "running"
         _JOBS[job_id]["message"] = "코드 분석 중..."
 
-        project_name = state.get("project_name") or "default-project"
+        project_name = state["project_name"]
         base_projects_dir = settings.REACT_PROJECT_PATH.parent / "projects"
         project_root = str(base_projects_dir / project_name)
         analysis = CodeAnalysisAgent(project_root)
@@ -217,14 +217,14 @@ async def _run_background_job(job_id: str, state: ChatState) -> None:
 
         _JOBS[job_id]["message"] = "파일 적용 중..."
         # 파일 생성 위치 검증: 새 파일일 가능성일 때만 검사 강화
-        project_name = state.get("project_name") or "default-project"
+        project_name = state["project_name"]
         is_new_file = target_file and not resolve_src_path(target_file, project_name).exists()
         if is_new_file:
             # 확장자 기반으로 페이지/컴포넌트 추정 없이, 경로 규칙만 강제
             if target_file.startswith("client/pages/"):
                 # 라우트 추가 보장 (App.tsx)
                 try:
-                    _ensure_route_in_app(target_file)
+                    _ensure_route_in_app(target_file, project_name)
                 except Exception:
                     logger.exception("Route injection encountered an error; continuing")
             elif target_file.startswith("client/components/ui/"):
@@ -268,7 +268,7 @@ class ChatWorkflow:
         file_content: Optional[str] = None,
         model: str = "qwen/qwen3-coder",
         attachments: Optional[List[Dict[str, Any]]] = None,
-        project_name: Optional[str] = None,
+        project_name: str = "default-project",
     ) -> Dict[str, Any]:
         initial: ChatState = {
             "messages": messages,

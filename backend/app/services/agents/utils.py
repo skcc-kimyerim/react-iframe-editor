@@ -16,10 +16,10 @@ def _to_kebab_case(name: str) -> str:
     return s2.strip('-').lower()
 
 
-def _ensure_route_in_app(page_relative_path: str) -> None:
+def _ensure_route_in_app(page_relative_path: str, project_name: str = "default-project") -> None:
     try:
-        app_path = resolve_src_path("client/App.tsx")
-        if not app_path.exists():
+        app_path = resolve_src_path("client/App.tsx", project_name)
+        if not app_path.exists():   
             logger.warning("App.tsx not found; skipping route injection")
             return
 
