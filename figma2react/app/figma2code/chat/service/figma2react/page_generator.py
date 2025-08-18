@@ -114,7 +114,7 @@ class PageGenerator:
                 "- class에 'field', 'input'이 포함되어 있고, 내부에 'Email', 'Password' 등 텍스트가 있으면: Input 컴포넌트로 대체\n"
                 "- class에 'textarea'가 포함되어 있고, 내부에 'Type your message here' 등 placeholder가 있으면: Textarea 컴포넌트로 대체\n"
                 "이외에도, label/placeholder/텍스트/계층 정보를 적극적으로 활용해서 컴포넌트로 매핑해줘.\n"
-                f"import는 반드시 {components_dir_name}/에서 하고, 나머지는 styled-components로 만들어도 돼.\n"
+                f"import는 반드시 {components_dir_name}/에서 하고, 나머지는 tailwindcss로 만들어도 돼.\n"
             )
 
             usage_examples = (
@@ -153,9 +153,9 @@ class PageGenerator:
                 "아래는 Figma에서 추출한 HTML/CSS입니다.\n"
                 "이 HTML/CSS를 바탕으로 완전한 React TypeScript 페이지를 생성해주세요.\n"
                 "중요 사항:\n"
-                "- TypeScript + styled-components 사용\n"
+                "- TypeScript + tailwindcss 사용\n"
                 "- HTML 구조를 정확히 React 컴포넌트로 변환\n"
-                "- CSS 스타일을 styled-components로 변환\n"
+                "- CSS 스타일을 tailwindcss로 변환\n"
                 "- useState, useCallback 등 필요한 React 훅 사용\n"
                 "- 실제로 동작하는 페이지로 만들어주세요\n"
                 "- ```tsx 같은 마크다운 코드블록을 절대 포함하지 마세요. 순수한 TSX 코드만 출력하세요.\n"
@@ -184,7 +184,7 @@ class PageGenerator:
 아래는 Figma에서 추출한 섹션 JSON입니다:
 {json.dumps(component_json, ensure_ascii=False, indent=2)}
 
-- TypeScript + styled-components 사용
+- TypeScript + tailwindcss 사용
 - 이 파일은 `export default function {component_name}()` 형태의 완전한 TSX만 출력
 - 설명, 마크다운 금지
 """

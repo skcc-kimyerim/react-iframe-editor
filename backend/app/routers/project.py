@@ -5,7 +5,7 @@ import logging
 import shutil
 
 from ..core.config import settings
-from ..services.react_dev_server import create_react_manager
+from ..services.react_dev_server import get_or_create_manager
 from ..services.template_service import get_template_service
 
 
@@ -38,7 +38,7 @@ async def init_project(request: ProjectInitRequest):
 
         # 기존 프로젝트가 있으면 바로 개발 서버 실행
         if project_path.exists():
-            project_react_manager = create_react_manager(project_path, settings.REACT_DEV_PORT)
+            project_react_manager = await get_or_create_manager(request.project_name, project_path, settings.REACT_DEV_PORT)
             await project_react_manager.start()
             dev_server_url = f"http://localhost:{settings.REACT_DEV_PORT}/"
             return {
@@ -69,7 +69,7 @@ async def init_project(request: ProjectInitRequest):
         logger.info(f"템플릿 기반 프로젝트 생성 완료: {request.app_name}")
 
         # 의존성 설치 및 개발 서버 시작
-        project_react_manager = create_react_manager(project_path, settings.REACT_DEV_PORT)
+        project_react_manager = await get_or_create_manager(request.project_name, project_path, settings.REACT_DEV_PORT)
         await project_react_manager.install_dependencies()
         await project_react_manager.ensure_typescript_and_router()
         await project_react_manager.start()

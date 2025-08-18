@@ -82,7 +82,7 @@ class ReactComponentGenerator:
 1. 절대 구체적인 텍스트를 하드코딩하지 마세요
 2. 모든 콘텐츠는 props를 통해서만 전달
 3. 기본값은 빈 배열([]) 또는 빈 문자열('') 사용
-4. TypeScript + styled-components 필수 사용
+4. TypeScript + tailwindcss 필수 사용
 
 💡 최우선 설계 원칙:
 - 재사용성 최우선: 다양한 상황에서 사용할 수 있는 유연한 컴포넌트
@@ -135,7 +135,7 @@ class ReactComponentGenerator:
 
 === 🔧 필수 기술 요구사항 ===
 1. **TypeScript 사용 필수**
-2. **styled-components 사용** (import styled from 'styled-components')
+2. **tailwindcss 사용**
 3. **함수형 컴포넌트 + React Hooks**
 4. **완전한 Props 인터페이스 정의**
 5. **모든 prop에 대한 기본값 설정**
@@ -230,7 +230,7 @@ class ReactComponentGenerator:
 
 1. **Import 구문** (필요한 React hooks 포함)
 2. **TypeScript 인터페이스 정의** (상세한 JSDoc 포함)
-3. **styled-components 정의** (기능에 맞는 스타일링)
+3. **tailwindcss 정의** (기능에 맞는 스타일링)
 4. **메인 컴포넌트 함수** (최소한의 기본값, 기능 로직, JSX)
 5. **export default**
 
@@ -248,7 +248,7 @@ class ReactComponentGenerator:
             messages = [
                 {
                     "role": "system",
-                    "content": "당신은 최고 수준의 React TypeScript 개발자입니다. Figma JSON 데이터를 정확히 분석해서 시각적으로 동일한 React 컴포넌트를 생성해주세요. styled-components를 사용하여 프로덕션 레벨의 코드를 작성하세요. Figma의 레이아웃, 색상, 타이포그래피, 간격 등 모든 시각적 요소를 정확히 반영해야 합니다.",
+                    "content": "당신은 최고 수준의 React TypeScript 개발자입니다. Figma JSON 데이터를 정확히 분석해서 시각적으로 동일한 React 컴포넌트를 생성해주세요. tailwindcss를 사용하여 프로덕션 레벨의 코드를 작성하세요. Figma의 레이아웃, 색상, 타이포그래피, 간격 등 모든 시각적 요소를 정확히 반영해야 합니다.",
                 },
                 {"role": "user", "content": prompt},
             ]
@@ -275,7 +275,7 @@ class ReactComponentGenerator:
 === 사용 가능한 컴포넌트 목록 (import해서 사용) ===
 {available_components}
 
-- 반드시 TypeScript + styled-components 사용
+- 반드시 TypeScript + tailwindcss 사용
 - 컴포넌트는 import해서 사용 (없는 경우 직접 구현)
 - 완전한 TSX 파일만 출력 (마크다운 블록 없이)
 - 실제 서비스에서 바로 사용할 수 있는 수준의 코드로 작성
@@ -292,7 +292,7 @@ class ReactComponentGenerator:
             messages = [
                 {
                     "role": "system",
-                    "content": "당신은 최고 수준의 React TypeScript 개발자입니다. Figma JSON 데이터를 정확히 분석해서 시각적으로 동일한 React 컴포넌트를 생성해주세요. styled-components를 사용하여 프로덕션 레벨의 코드를 작성하세요. Figma의 레이아웃, 색상, 타이포그래피, 간격 등 모든 시각적 요소를 정확히 반영해야 합니다.",
+                    "content": "당신은 최고 수준의 React TypeScript 개발자입니다. Figma JSON 데이터를 정확히 분석해서 시각적으로 동일한 React 컴포넌트를 생성해주세요. tailwindcss를 사용하여 프로덕션 레벨의 코드를 작성하세요. Figma의 레이아웃, 색상, 타이포그래피, 간격 등 모든 시각적 요소를 정확히 반영해야 합니다.",
                 },
                 {"role": "user", "content": prompt},
             ]
@@ -312,7 +312,7 @@ class ReactComponentGenerator:
                     "content": (
                         "당신은 최고 수준의 React TypeScript 개발자입니다. "
                         "아래 HTML/CSS 구조를 정확히 분석해서 시각적으로 동일한 React 컴포넌트를 생성해주세요. "
-                        "styled-components를 사용하여 프로덕션 레벨의 코드를 작성하세요. "
+                        "tailwindcss를 사용하여 프로덕션 레벨의 코드를 작성하세요. "
                         "레이아웃, 색상, 타이포그래피, 간격 등 모든 시각적 요소를 정확히 반영해야 합니다."
                     ),
                 },
