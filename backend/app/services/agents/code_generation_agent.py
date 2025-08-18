@@ -50,8 +50,20 @@ class CodeGenerationAgent:
 - 새 컴포넌트 파일은 반드시 client/components/ui/ 아래에 생성하세요.
 - 다른 위치에 새 파일을 만들지 마세요.
 
-[파일명 규칙]
+[파일명 및 컴포넌트 이름 규칙]
+- 파일명과 컴포넌트 이름은 반드시 동일해야 합니다 (예: NewPage.tsx → const NewPage)
 - 페이지 파일명은 반드시 PascalCase를 사용하세요 (예: AboutUs.tsx).
+- 컴포넌트 이름도 파일명과 동일한 PascalCase를 사용하세요.
+
+[필수 코드 작성 형식]
+- React 컴포넌트는 반드시 다음 형식으로 작성하세요:
+  const ComponentName: React.FC = () => {
+    // 컴포넌트 내용
+  };
+  export default ComponentName;
+  
+- export default function 형식은 사용하지 마세요.
+- 컴포넌트 이름은 파일명과 정확히 일치해야 합니다.
 """
 
         try:
@@ -138,6 +150,35 @@ class CodeGenerationAgent:
 
         code_blocks = re.findall(r'```(?:typescript|javascript|tsx|jsx)\n(.*?)\n```', content, re.DOTALL)
         updated_content = code_blocks[0].strip() if code_blocks else None
+
+        # 파일명과 컴포넌트 이름 일치 검증 및 수정
+        if updated_content and file_path and (file_path.startswith("client/pages/") or file_path.startswith("client/components/")):
+            # 파일명에서 컴포넌트 이름 추출
+            filename = file_path.split("/")[-1]
+            if "." in filename:
+                expected_component_name = filename.rsplit(".", 1)[0]
+                
+                # 잘못된 export default function 패턴을 올바른 형식으로 변경
+                updated_content = re.sub(
+                    r'export\s+default\s+function\s+(\w+)',
+                    lambda m: f'const {expected_component_name}: React.FC = () => {{\n  // TODO: 함수 내용을 여기로 이동\n}};\n\nexport default {expected_component_name};',
+                    updated_content
+                )
+                
+                # const ComponentName 패턴에서 이름 수정
+                updated_content = re.sub(
+                    r'const\s+(\w+)\s*:\s*React\.FC\s*=',
+                    f'const {expected_component_name}: React.FC =',
+                    updated_content
+                )
+                
+                # export default ComponentName에서 이름 수정
+                updated_content = re.sub(
+                    r'export\s+default\s+(\w+)\s*;?\s*$',
+                    f'export default {expected_component_name};',
+                    updated_content,
+                    flags=re.MULTILINE
+                )
 
         display = content
         if code_blocks:

@@ -47,8 +47,9 @@ def _ensure_route_in_app(page_relative_path: str, project_name: str = "default-p
         route_line = f'          <Route path="/{_to_kebab_case(component)}" element={{<{component} />}} />'
         if route_line not in text:
             if "<Routes>" in text and "path=\"*\"" in text:
+                # * 라우트 앞에 새 라우트를 추가 (올바른 줄바꿈과 들여쓰기 포함)
                 text = re.sub(
-                    r"(\s*<Route\s+path=\"\*\"[\s\S]*?>\s*</Route>|\s*<Route\s+path=\"\*\"[\s\S]*/>\s*)",
+                    r"(\s*<Route\s+path=\"\*\")",
                     route_line + "\n" + r"\1",
                     text,
                     count=1,

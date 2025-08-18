@@ -94,20 +94,22 @@ export const Chat: React.FC<ChatProps> = ({
 
       // FormData 생성
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append("file", file);
 
       // localhost:8000/parse로 파일 업로드
-      const response = await fetch('http://localhost:8000/parse', {
-        method: 'POST',
+      const response = await fetch("http://localhost:8000/parse", {
+        method: "POST",
         body: formData,
       });
 
       if (!response.ok) {
-        throw new Error(`파싱 요청 실패: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `파싱 요청 실패: ${response.status} ${response.statusText}`
+        );
       }
 
       const parsedData = await response.json();
-      
+
       // 파싱된 데이터를 로컬 스토리지에 저장
       const timestamp = new Date().toISOString();
       const parsedContent = {
@@ -115,16 +117,18 @@ export const Chat: React.FC<ChatProps> = ({
         fileSize: file.size,
         fileType: file.type,
         parsedAt: timestamp,
-        data: parsedData
+        data: parsedData,
       };
 
       const storageKey = `parsed_file_${file.name}_${timestamp}`;
       localStorage.setItem(storageKey, JSON.stringify(parsedContent));
-      
-      console.log(`✅ 파일 "${file.name}" 파싱 완료 및 로컬 스토리지에 저장:`, storageKey);
-      
+
+      console.log(
+        `✅ 파일 "${file.name}" 파싱 완료 및 로컬 스토리지에 저장:`,
+        storageKey
+      );
     } catch (error) {
-      console.error('파일 파싱 중 오류:', error);
+      console.error("파일 파싱 중 오류:", error);
     }
   };
 
@@ -134,12 +138,12 @@ export const Chat: React.FC<ChatProps> = ({
     const usedKey = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith('parsed_file_')) {
+      if (key && key.startsWith("parsed_file_")) {
         try {
-          const data = JSON.parse(localStorage.getItem(key) || '{}');
+          const data = JSON.parse(localStorage.getItem(key) || "{}");
           parsedData.push(data);
         } catch (error) {
-          console.error('파싱된 데이터 읽기 오류:', error);
+          console.error("파싱된 데이터 읽기 오류:", error);
         }
 
         usedKey.push(key);
@@ -224,7 +228,7 @@ export const Chat: React.FC<ChatProps> = ({
     // 사용자 메시지를 스토어에 추가
     addMessage(userMsg);
 
-    setInput('');
+    setInput("");
     setIsSending(true);
 
     try {
@@ -242,15 +246,16 @@ export const Chat: React.FC<ChatProps> = ({
       const messagesToSend = messages.filter(
         (msg) =>
           !(
-            msg.role === 'assistant' &&
-            msg.content === '안녕하세요! 좌측 채팅창에서 질문을 보내면 우측 Code/Preview와 함께 작업을 도와드릴게요.'
+            msg.role === "assistant" &&
+            msg.content ===
+              "안녕하세요! 좌측 채팅창에서 질문을 보내면 우측 Code/Preview와 함께 작업을 도와드릴게요."
           )
       );
 
       // 로컬 스토리지에서 파싱된 데이터 가져오기
       const parsedData = getParsedDataFromStorage();
-      
-      let attachments_content = '';
+
+      let attachments_content = "";
 
       if (parsedData.length > 0) {
         attachments_content += `\n\n 첨부파일: \n\n`;
@@ -259,12 +264,6 @@ export const Chat: React.FC<ChatProps> = ({
           attachments_content += `\n\n - ${data.fileName}: \n\n ${data.data.parsed_data} `;
         });
       }
-      
-      // 사용자 메시지를 스토어에 추가
-      addMessage(userMsg);
-
-      setInput('');
-      setIsSending(true);
 
       const res = await fetch(`${API_BASE}/chat`, {
         method: "POST",
@@ -272,7 +271,7 @@ export const Chat: React.FC<ChatProps> = ({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: "claude-sonnet-4-20250514",
           messages: [...messagesToSend, userMsg],
           selectedFile: selectedFilePath,
           fileContent: fileContent,
