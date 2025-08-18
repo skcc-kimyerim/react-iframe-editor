@@ -12,6 +12,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
   const [newProjectName, setNewProjectName] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [projectType, setProjectType] = useState<"figma" | "basic">("basic");
+  const [deletingProject, setDeletingProject] = useState<string | null>(null);
 
   const {
     projects,
@@ -44,10 +45,30 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
     onProjectSelected();
   };
 
-  const handleDeleteProject = (name: string, e: React.MouseEvent) => {
+  const handleDeleteProject = async (name: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm(`"${name}" 프로젝트를 삭제하시겠습니까?`)) {
-      deleteProject(name);
+
+    if (
+      !confirm(
+        `"${name}" 프로젝트를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setDeletingProject(name);
+      await deleteProject(name);
+      // 삭제 성공 시 특별한 처리 필요 없음 (스토어에서 자동 업데이트)
+    } catch (error) {
+      console.error("프로젝트 삭제 실패:", error);
+      alert(
+        `프로젝트 삭제에 실패했습니다: ${
+          error instanceof Error ? error.message : "알 수 없는 오류"
+        }`
+      );
+    } finally {
+      setDeletingProject(null);
     }
   };
 
@@ -226,8 +247,15 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
 
                   <button
                     onClick={(e) => handleDeleteProject(name, e)}
-                    className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/20 text-red-400 transition-opacity"
-                    title="프로젝트 삭제"
+                    disabled={deletingProject === name}
+                    className={`p-1 rounded hover:bg-red-500/20 text-red-400 transition-opacity ${
+                      deletingProject === name
+                        ? "opacity-50 cursor-not-allowed"
+                        : "opacity-0 group-hover:opacity-100"
+                    }`}
+                    title={
+                      deletingProject === name ? "삭제 중..." : "프로젝트 삭제"
+                    }
                   >
                     <Trash2 size={14} />
                   </button>

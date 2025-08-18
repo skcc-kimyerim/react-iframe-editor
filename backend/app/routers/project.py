@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from pathlib import Path
 import logging
+import shutil
 
 from ..core.config import settings
 from ..services.react_dev_server import create_react_manager
@@ -21,6 +22,9 @@ class ProjectInitRequest(BaseModel):
     app_name: str = "dynamic-react-app"
     title: str = "Dynamic React App"
     project_name: str = "default-project"  # 프로젝트 이름 추가
+
+class ProjectDeleteRequest(BaseModel):
+    project_name: str
 
 @router.post("/init-project")
 async def init_project(request: ProjectInitRequest):
@@ -78,3 +82,40 @@ async def init_project(request: ProjectInitRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to prepare or initialize project: {e}")
+
+@router.delete("/delete-project")
+async def delete_project(request: ProjectDeleteRequest):
+    try:
+        # 프로젝트 경로 설정
+        base_projects_dir = settings.REACT_PROJECT_PATH.parent / "projects"
+        project_path: Path = base_projects_dir / request.project_name
+        
+        # 프로젝트 디렉토리가 존재하지 않으면 404
+        if not project_path.exists():
+            raise HTTPException(status_code=404, detail=f"Project '{request.project_name}' not found")
+        
+        # 프로젝트 디렉토리인지 확인 (안전성 체크)
+        if not project_path.is_dir():
+            raise HTTPException(status_code=400, detail=f"'{request.project_name}' is not a directory")
+        
+        # 프로젝트 디렉토리가 base_projects_dir 하위에 있는지 확인 (보안 체크)
+        try:
+            project_path.resolve().relative_to(base_projects_dir.resolve())
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid project path")
+        
+        # 프로젝트 폴더 삭제
+        shutil.rmtree(project_path)
+        
+        logger.info(f"프로젝트 삭제 완료: {request.project_name} at {project_path}")
+        
+        return {
+            "success": True,
+            "message": f"Project '{request.project_name}' deleted successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"프로젝트 삭제 실패: {request.project_name} - {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete project: {str(e)}")

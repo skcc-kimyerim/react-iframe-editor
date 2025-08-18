@@ -224,3 +224,5 @@ backend/projects
 backend/output
 backend/uploads
 __pycache__
+__pycache__
+/figma2react/output

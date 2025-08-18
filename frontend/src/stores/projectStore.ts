@@ -1,14 +1,14 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 export type Message = {
-  role: 'user' | 'assistant' | 'system' | 'error';
+  role: "user" | "assistant" | "system" | "error";
   content: string;
 };
 
 export type ProjectState = {
   name: string;
-  projectType: 'figma' | 'basic';
+  projectType: "figma" | "basic";
   isInitialized: boolean;
   isServerRunning: boolean;
   chatHistory: Message[];
@@ -30,11 +30,11 @@ export type ProjectStore = {
   projects: Record<string, ProjectState>;
 
   // 프로젝트 관련 액션
-  createProject: (name: string, projectType?: 'figma' | 'basic') => void;
+  createProject: (name: string, projectType?: "figma" | "basic") => void;
   selectProject: (name: string) => void;
-  deleteProject: (name: string) => void;
+  deleteProject: (name: string) => Promise<void>;
   clearCurrentProject: () => void;
-  setProjectType: (projectType: 'figma' | 'basic') => void;
+  setProjectType: (projectType: "figma" | "basic") => void;
 
   // 현재 프로젝트 상태 업데이트
   updateCurrentProject: (updates: Partial<ProjectState>) => void;
@@ -61,23 +61,28 @@ export type ProjectStore = {
   hasProjects: () => boolean;
 };
 
-const createDefaultProject = (name: string, projectType: 'figma' | 'basic' = 'basic'): ProjectState => ({
+const API_BASE = (import.meta as any).env.VITE_REACT_APP_API_URL + "/api";
+
+const createDefaultProject = (
+  name: string,
+  projectType: "figma" | "basic" = "basic"
+): ProjectState => ({
   name,
   projectType,
   isInitialized: false,
   isServerRunning: false,
   chatHistory: [
     {
-      role: 'assistant',
+      role: "assistant",
       content: `안녕하세요! "${name}" 프로젝트에 오신 것을 환영합니다. 질문을 보내면 프로젝트 생성과 개발을 도워드릴게요.`,
     },
   ],
-  devServerUrl: '',
+  devServerUrl: "",
   fileTree: [],
-  selectedFilePath: '',
-  code: '',
-  routePath: '/',
-  availableRoutes: ['/'],
+  selectedFilePath: "",
+  code: "",
+  routePath: "/",
+  availableRoutes: ["/"],
   createdAt: new Date().toISOString(),
   lastModified: new Date().toISOString(),
 });
@@ -88,7 +93,10 @@ export const useProjectStore = create<ProjectStore>()(
       currentProject: null,
       projects: {},
 
-      createProject: (name: string, projectType: 'figma' | 'basic' = 'basic') => {
+      createProject: (
+        name: string,
+        projectType: "figma" | "basic" = "basic"
+      ) => {
         const trimmedName = name.trim();
         if (!trimmedName) return;
 
@@ -115,18 +123,44 @@ export const useProjectStore = create<ProjectStore>()(
         }
       },
 
-      deleteProject: (name: string) => {
-        set((state) => {
-          const newProjects = { ...state.projects };
-          delete newProjects[name];
+      deleteProject: async (name: string) => {
+        try {
+          // 백엔드에서 실제 프로젝트 폴더 삭제
+          const response = await fetch(`${API_BASE}/delete-project`, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ project_name: name }),
+          });
 
-          const currentProject = state.currentProject?.name === name ? null : state.currentProject;
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(
+              errorData.detail || `Failed to delete project: ${response.status}`
+            );
+          }
 
-          return {
-            projects: newProjects,
-            currentProject,
-          };
-        });
+          // 백엔드 삭제 성공 시 Zustand 스토어에서도 제거
+          set((state) => {
+            const newProjects = { ...state.projects };
+            delete newProjects[name];
+
+            const currentProject =
+              state.currentProject?.name === name ? null : state.currentProject;
+
+            return {
+              projects: newProjects,
+              currentProject,
+            };
+          });
+
+          console.log(`Project '${name}' deleted successfully`);
+        } catch (error) {
+          console.error("Failed to delete project:", error);
+          // 에러가 발생해도 사용자에게 알리기 위해 에러를 다시 throw
+          throw error;
+        }
       },
 
       clearCurrentProject: () => {
@@ -136,7 +170,7 @@ export const useProjectStore = create<ProjectStore>()(
         }));
       },
 
-      setProjectType: (projectType: 'figma' | 'basic') => {
+      setProjectType: (projectType: "figma" | "basic") => {
         get().updateCurrentProject({ projectType });
       },
 
@@ -184,7 +218,7 @@ export const useProjectStore = create<ProjectStore>()(
         get().updateCurrentProject({
           chatHistory: [
             {
-              role: 'assistant',
+              role: "assistant",
               content: `안녕하세요! "${
                 get().currentProject?.name
               }" 프로젝트에 오신 것을 환영합니다. 질문을 보내면 프로젝트 생성과 개발을 도와드릴게요.`,
@@ -228,7 +262,10 @@ export const useProjectStore = create<ProjectStore>()(
         return Object.keys(get().projects).sort((a, b) => {
           const projectA = get().projects[a];
           const projectB = get().projects[b];
-          return new Date(projectB.lastModified).getTime() - new Date(projectA.lastModified).getTime();
+          return (
+            new Date(projectB.lastModified).getTime() -
+            new Date(projectA.lastModified).getTime()
+          );
         });
       },
 
@@ -237,7 +274,7 @@ export const useProjectStore = create<ProjectStore>()(
       },
     }),
     {
-      name: 'project-store',
+      name: "project-store",
       partialize: (state) => ({
         projects: state.projects,
         currentProject: state.currentProject,
