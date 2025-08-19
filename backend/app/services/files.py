@@ -6,11 +6,15 @@ from fastapi import HTTPException
 from ..core.config import settings
 
 
-def resolve_src_path(relative_path: str) -> Path:
+def resolve_src_path(relative_path: str, project_name: str = "default-project") -> Path:
     if not relative_path or not isinstance(relative_path, str):
         raise HTTPException(status_code=400, detail="Invalid relativePath")
     normalized = os.path.normpath(relative_path).lstrip(os.sep)
-    project_base = settings.REACT_PROJECT_PATH
+    
+    # 프로젝트별 경로 설정
+    base_projects_dir = settings.REACT_PROJECT_PATH.parent / "projects"
+    project_base = base_projects_dir / project_name
+    
     resolved = project_base / normalized
     try:
         resolved.relative_to(project_base)

@@ -1,0 +1,52 @@
+version: 1
+disable_existing_loggers: False
+formatters:
+  simple:
+    # format: "%(asctime)s [%(transaction_id)s] [Worker %(process)d] [%(name)s] [%(levelname)s] %(message)s"
+    format: "%(asctime)s [Worker %(process)d] [%(name)s] [%(levelname)s] %(message)s"
+handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: simple
+    stream: ext://sys.stdout
+  # file:
+  #   class: logging.handlers.TimedRotatingFileHandler
+  #   level: DEBUG
+  #   formatter: simple
+  #   when: midnight  # 매일 자정 log 파일 생성
+  #   interval: 15  # 15일 동안 log 축적
+  #   suffix: "%Y%m%d"  # 지난 파일은 oai.log.20240601 같이 이름 변경
+  #   filename: ./docs/docs.log
+  info_file:
+    class: logging.handlers.TimedRotatingFileHandler
+    level: INFO
+    formatter: simple
+    encoding: utf-8
+    when: midnight
+    interval: 1
+    backupCount: 15
+    delay: False
+  debug_file:
+    class: logging.handlers.TimedRotatingFileHandler
+    level: DEBUG
+    formatter: simple
+    encoding: utf-8
+    when: midnight
+    interval: 1
+    backupCount: 15
+    delay: False
+loggers:
+  gunicorn.error:
+    level: DEBUG
+    handlers: [console, debug_file, info_file]
+    propagate: no
+  gunicorn.access:
+    level: DEBUG
+    handlers: [console, debug_file, info_file]
+    propagate: no
+  multipart.multipart:
+    level: WARNING
+root:
+  level: DEBUG
+  handlers: [console, debug_file, info_file]
+  propagate: no

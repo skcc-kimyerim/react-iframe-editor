@@ -219,6 +219,10 @@ $RECYCLE.BIN/
 
 node_modules
 backend/venv
-backend/dynamic-react-app
+backend/.venv
+backend/projects
 backend/output
+backend/uploads
 __pycache__
+__pycache__
+/figma2react/output
