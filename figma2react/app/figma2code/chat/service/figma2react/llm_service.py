@@ -25,7 +25,7 @@ class LLMService:
         self.router_api_key = os.getenv("OPENROUTER_API_KEY")
         self.azure_api_key = os.getenv("AOAI_API_KEY")
         self.azure_endpoint = os.getenv("AOAI_ENDPOINT")
-        self.azure_deployment = os.getenv("AOAI_DEPLOY_GPT4O")
+        self.azure_deployment = os.getenv("AOAI_DEPLOY_GPT4_1")
 
         # LLM 클라이언트 초기화
         self.client, self.model_name = self._initialize_llm_client()
@@ -55,12 +55,12 @@ class LLMService:
             if not self.azure_endpoint:
                 raise ValueError("AOAI_ENDPOINT 환경변수가 설정되지 않았습니다.")
             if not self.azure_deployment:
-                raise ValueError("AOAI_DEPLOY_GPT4O 환경변수가 설정되지 않았습니다.")
+                raise ValueError("AOAI_DEPLOY_GPT41 환경변수가 설정되지 않았습니다.")
 
             client = openai.AsyncAzureOpenAI(
                 azure_endpoint=self.azure_endpoint,
                 api_key=self.azure_api_key,
-                api_version="2024-02-01",
+                api_version="2025-01-01-preview",
             )
             return client, self.azure_deployment
 
@@ -77,9 +77,14 @@ class LLMService:
             )
             return response.choices[0].message.content.strip()
         except Exception as e:
-            print(f"❌ LLM 코드 생성 실패: {e}")
+            # 안전한 에러 출력 (유니코드 문자 처리)
+            try:
+                print(f"❌ LLM 코드 생성 실패: {e}")
+            except UnicodeEncodeError:
+                # ASCII로 변환할 수 없는 문자를 안전하게 처리
+                error_msg = str(e).encode('ascii', 'replace').decode('ascii')
+                print(f"❌ LLM 코드 생성 실패: {error_msg}")
             raise
-
     def get_model_info(self) -> dict:
         """현재 사용 중인 모델 정보 반환"""
         return {

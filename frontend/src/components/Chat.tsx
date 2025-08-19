@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { File, Paperclip, Send, Trash2, X } from 'lucide-react';
-import { useProjectStore, Message } from '../stores/projectStore';
+import React, { useEffect, useRef, useState } from "react";
+import { File, Paperclip, Send, Trash2, X } from "lucide-react";
+import { useProjectStore, Message } from "../stores/projectStore";
 
-const API_BASE = (import.meta as any).env.VITE_REACT_APP_API_URL + '/api';
+const API_BASE = (import.meta as any).env.VITE_REACT_APP_API_URL + "/api";
 
 interface ChatProps {
   selectedFilePath?: string;
@@ -11,10 +11,15 @@ interface ChatProps {
   onClearSelectedFile?: () => void;
 }
 
-export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFileUpdate, onClearSelectedFile }) => {
+export const Chat: React.FC<ChatProps> = ({
+  selectedFilePath,
+  fileContent,
+  onFileUpdate,
+  onClearSelectedFile,
+}) => {
   const { currentProject, addMessage } = useProjectStore();
   const messages = currentProject?.chatHistory || [];
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -51,9 +56,9 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
   const autoSize = () => {
     const el = inputRef.current;
     if (!el) return;
-    el.style.height = 'auto';
+    el.style.height = "auto";
     const max = 160; // px
-    el.style.height = Math.min(el.scrollHeight, max) + 'px';
+    el.style.height = Math.min(el.scrollHeight, max) + "px";
   };
 
   const onPickFiles = () => fileInputRef.current?.click();
@@ -65,7 +70,9 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
     const next: LocalAttachment[] = files.map((f) => ({
       id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
       file: f,
-      previewUrl: f.type.startsWith('image/') ? URL.createObjectURL(f) : undefined,
+      previewUrl: f.type.startsWith("image/")
+        ? URL.createObjectURL(f)
+        : undefined,
     }));
     setAttachments((prev) => [...prev, ...next]);
     // reset input to allow re-selecting same file
@@ -73,7 +80,7 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
     // parse file content
     parseAndAddToChat(files[0]);
 
-    e.currentTarget.value = '';
+    e.currentTarget.value = "";
   };
 
   const removeAttachment = (id: string) => {
@@ -87,16 +94,18 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
 
       // FormData 생성
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append("file", file);
 
       // localhost:8000/parse로 파일 업로드
-      const response = await fetch('http://localhost:8000/parse', {
-        method: 'POST',
+      const response = await fetch("http://localhost:8000/parse", {
+        method: "POST",
         body: formData,
       });
 
       if (!response.ok) {
-        throw new Error(`파싱 요청 실패: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `파싱 요청 실패: ${response.status} ${response.statusText}`
+        );
       }
 
       const parsedData = await response.json();
@@ -114,9 +123,12 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
       const storageKey = `parsed_file_${file.name}_${timestamp}`;
       localStorage.setItem(storageKey, JSON.stringify(parsedContent));
 
-      console.log(`✅ 파일 "${file.name}" 파싱 완료 및 로컬 스토리지에 저장:`, storageKey);
+      console.log(
+        `✅ 파일 "${file.name}" 파싱 완료 및 로컬 스토리지에 저장:`,
+        storageKey
+      );
     } catch (error) {
-      console.error('파일 파싱 중 오류:', error);
+      console.error("파일 파싱 중 오류:", error);
     }
   };
 
@@ -126,12 +138,12 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
     const usedKey = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith('parsed_file_')) {
+      if (key && key.startsWith("parsed_file_")) {
         try {
-          const data = JSON.parse(localStorage.getItem(key) || '{}');
+          const data = JSON.parse(localStorage.getItem(key) || "{}");
           parsedData.push(data);
         } catch (error) {
-          console.error('파싱된 데이터 읽기 오류:', error);
+          console.error("파싱된 데이터 읽기 오류:", error);
         }
 
         usedKey.push(key);
@@ -153,15 +165,15 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
     try {
       const form = new FormData();
       needUpload.forEach((a) => {
-        if (a.file) form.append('files', a.file);
+        if (a.file) form.append("files", a.file);
       });
       const res = await fetch(`${API_BASE}/uploads`, {
-        method: 'POST',
+        method: "POST",
         body: form,
       });
       if (!res.ok) {
         const t = await res.text();
-        throw new Error(t || '업로드 실패');
+        throw new Error(t || "업로드 실패");
       }
       const data = await res.json();
       const uploaded: any[] = data?.files || [];
@@ -182,7 +194,7 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
               },
             };
           }
-          return { ...a, error: '업로드 응답이 올바르지 않습니다.' };
+          return { ...a, error: "업로드 응답이 올바르지 않습니다." };
         }
         return a;
       });
@@ -193,20 +205,26 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
     }
   };
 
-  const FIGMA_URL_PATTERN = /https:\/\/www\.figma\.com\/(?:file|design)\/([a-zA-Z0-9]+)\/[^?\s]*(?:\?.*)?/g;
+  const FIGMA_URL_PATTERN =
+    /https:\/\/www\.figma\.com\/(?:file|design)\/([a-zA-Z0-9]+)\/[^?\s]*(?:\?.*)?/g;
 
   const sendMessage = async () => {
     const hasText = input.trim().length > 0;
     const hasAttachments = attachments.length > 0;
-    if ((!hasText && !hasAttachments) || isSending || isProcessingRef.current) return; // 중복/빈 전송 방지
+    if ((!hasText && !hasAttachments) || isSending || isProcessingRef.current)
+      return; // 중복/빈 전송 방지
 
     isProcessingRef.current = true; // 처리 시작
-    const userText = hasText ? input.trim() : hasAttachments ? '(첨부 전송)' : '';
-    const userMsg: Message = { role: 'user', content: userText };
+    const userText = hasText
+      ? input.trim()
+      : hasAttachments
+      ? "(첨부 전송)"
+      : "";
+    let userMsg: Message = { role: "user", content: userText };
 
     // 프로젝트가 없으면 메시지 전송을 막음
     if (!currentProject) {
-      console.warn('프로젝트가 선택되지 않았습니다.');
+      console.warn("프로젝트가 선택되지 않았습니다.");
       return;
     }
 
@@ -219,8 +237,10 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
 
         // 컴포넌트 생성 요청인지 확인
         if (
-          lowerText.includes('컴포넌트') &&
-          (lowerText.includes('만들어') || lowerText.includes('생성') || lowerText.includes('변환'))
+          lowerText.includes("컴포넌트") &&
+          (lowerText.includes("만들어") ||
+            lowerText.includes("생성") ||
+            lowerText.includes("변환"))
         ) {
           await handleFigmaComponentRequest(figmaUrl, userText, userMsg);
           return;
@@ -228,8 +248,10 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
 
         // 페이지 생성 요청인지 확인
         if (
-          lowerText.includes('페이지') &&
-          (lowerText.includes('만들어') || lowerText.includes('생성') || lowerText.includes('변환'))
+          lowerText.includes("페이지") &&
+          (lowerText.includes("만들어") ||
+            lowerText.includes("생성") ||
+            lowerText.includes("변환"))
         ) {
           await handleFigmaPageRequest(figmaUrl, userText, userMsg);
           return;
@@ -239,7 +261,7 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
     // 사용자 메시지를 스토어에 추가
     addMessage(userMsg);
 
-    setInput('');
+    setInput("");
     setIsSending(true);
 
     try {
@@ -257,15 +279,16 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
       const messagesToSend = messages.filter(
         (msg) =>
           !(
-            msg.role === 'assistant' &&
-            msg.content === '안녕하세요! 좌측 채팅창에서 질문을 보내면 우측 Code/Preview와 함께 작업을 도와드릴게요.'
+            msg.role === "assistant" &&
+            msg.content ===
+              "안녕하세요! 좌측 채팅창에서 질문을 보내면 우측 Code/Preview와 함께 작업을 도와드릴게요."
           )
       );
 
       // 로컬 스토리지에서 파싱된 데이터 가져오기
       const parsedData = getParsedDataFromStorage();
 
-      let attachments_content = '';
+      let attachments_content = "";
 
       if (parsedData.length > 0) {
         attachments_content += `\n\n 첨부파일: \n\n`;
@@ -275,13 +298,15 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
         });
       }
 
+      userMsg.content = userMsg.content + attachments_content;
+
       const res = await fetch(`${API_BASE}/chat`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: "claude-sonnet-4-20250514",
           messages: [...messagesToSend, userMsg],
           selectedFile: selectedFilePath,
           fileContent: fileContent,
@@ -291,10 +316,10 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
       });
 
       if (!res.ok) {
-        const contentType = res.headers.get('content-type') || '';
-        let detail = '';
+        const contentType = res.headers.get("content-type") || "";
+        let detail = "";
         try {
-          if (contentType.includes('application/json')) {
+          if (contentType.includes("application/json")) {
             const body = await res.json();
             detail = body?.detail || body?.message || JSON.stringify(body);
           } else {
@@ -307,35 +332,42 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
             }
           }
         } catch {
-          detail = '';
+          detail = "";
         }
 
         const status = res.status;
-        const statusText = res.statusText || '';
+        const statusText = res.statusText || "";
         const friendly = (() => {
-          if (status === 429) return '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.';
-          if (status === 400) return '요청이 올바르지 않습니다.';
-          if (status === 401) return '인증이 필요합니다.';
-          if (status === 403) return '권한이 없습니다.';
-          if (status === 404) return '요청한 리소스를 찾을 수 없습니다.';
-          if (status === 408) return '요청 시간이 초과되었습니다.';
-          if (status >= 500) return '서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
-          return statusText || '요청 중 오류가 발생했습니다.';
+          if (status === 429)
+            return "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.";
+          if (status === 400) return "요청이 올바르지 않습니다.";
+          if (status === 401) return "인증이 필요합니다.";
+          if (status === 403) return "권한이 없습니다.";
+          if (status === 404) return "요청한 리소스를 찾을 수 없습니다.";
+          if (status === 408) return "요청 시간이 초과되었습니다.";
+          if (status >= 500)
+            return "서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+          return statusText || "요청 중 오류가 발생했습니다.";
         })();
 
         const shorten = (s: string, max = 160) => {
-          if (!s) return '';
+          if (!s) return "";
           const trimmed = s.toString().trim();
-          return trimmed.length > max ? trimmed.slice(0, max - 1) + '…' : trimmed;
+          return trimmed.length > max
+            ? trimmed.slice(0, max - 1) + "…"
+            : trimmed;
         };
 
-        const finalMessage = `⚠️ ${friendly}${detail ? `\n상세: ${shorten(detail)}` : ''}`;
-        addMessage({ role: 'error', content: finalMessage });
+        const finalMessage = `⚠️ ${friendly}${
+          detail ? `\n상세: ${shorten(detail)}` : ""
+        }`;
+        addMessage({ role: "error", content: finalMessage });
         return;
       }
 
       const data = await res.json();
-      const content: string = data?.content || '죄송합니다, 응답을 생성하지 못했습니다.';
+      const content: string =
+        data?.content || "죄송합니다, 응답을 생성하지 못했습니다.";
 
       // 파일 업데이트가 있으면 콜백 호출
       if (data?.updatedFile && data?.updatedContent && onFileUpdate) {
@@ -343,12 +375,12 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
       }
 
       // code_edit는 초기 짧은 응답을 표시하지 않고, 이후 폴링된 display만 보여줍니다.
-      if (data?.processingType !== 'code_edit') {
-        addMessage({ role: 'assistant', content });
+      if (data?.processingType !== "code_edit") {
+        addMessage({ role: "assistant", content });
       }
 
       // 백그라운드 코드 편집 작업만 폴링 (분석은 파일 변경이 없음)
-      if (data?.processingType === 'code_edit' && data?.jobId) {
+      if (data?.processingType === "code_edit" && data?.jobId) {
         const jobId: string = data.jobId;
 
         const pollJob = async () => {
@@ -357,30 +389,39 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
               const jr = await fetch(`${API_BASE}/chat/jobs/${jobId}`);
               if (!jr.ok) break;
               const jd = await jr.json();
-              const status: string = jd?.status || 'unknown';
+              const status: string = jd?.status || "unknown";
 
-              if (status === 'done') {
+              if (status === "done") {
                 if (jd?.display) {
                   addMessage({
-                    role: 'assistant',
+                    role: "assistant",
                     content: jd.display as string,
                   });
                 }
                 if (onFileUpdate && jd?.updatedFile && jd?.updatedContent) {
-                  onFileUpdate(jd.updatedFile as string, jd.updatedContent as string);
+                  onFileUpdate(
+                    jd.updatedFile as string,
+                    jd.updatedContent as string
+                  );
                 }
                 return;
               }
-              if (status === 'error') {
-                const errMsg = (jd?.error || jd?.message || '작업 중 오류가 발생했습니다.').toString();
-                addMessage({ role: 'error', content: `⚠️ ${errMsg}` });
+              if (status === "error") {
+                const errMsg = (
+                  jd?.error ||
+                  jd?.message ||
+                  "작업 중 오류가 발생했습니다."
+                ).toString();
+                addMessage({ role: "error", content: `⚠️ ${errMsg}` });
                 return;
               }
               await new Promise((r) => setTimeout(r, 1500));
             }
           } catch (e: any) {
-            const m = (e?.message || '작업 상태 조회 중 오류가 발생했습니다.').toString();
-            addMessage({ role: 'error', content: `⚠️ ${m}` });
+            const m = (
+              e?.message || "작업 상태 조회 중 오류가 발생했습니다."
+            ).toString();
+            addMessage({ role: "error", content: `⚠️ ${m}` });
           }
         };
 
@@ -390,11 +431,12 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
     } catch (e: any) {
       console.error(e);
       const message = (() => {
-        if (e?.name === 'TypeError') return '네트워크 오류가 발생했습니다. 인터넷 연결을 확인해 주세요.';
-        const m = (e?.message || '요청 중 오류가 발생했습니다.').toString();
-        return m.length > 160 ? m.slice(0, 159) + '…' : m;
+        if (e?.name === "TypeError")
+          return "네트워크 오류가 발생했습니다. 인터넷 연결을 확인해 주세요.";
+        const m = (e?.message || "요청 중 오류가 발생했습니다.").toString();
+        return m.length > 160 ? m.slice(0, 159) + "…" : m;
       })();
-      addMessage({ role: 'error', content: `⚠️ ${message}` });
+      addMessage({ role: "error", content: `⚠️ ${message}` });
     } finally {
       setIsSending(false);
       isProcessingRef.current = false; // 처리 완료
@@ -403,50 +445,59 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
     }
   };
   // Figma 컴포넌트 생성 요청 처리
-  const handleFigmaComponentRequest = async (figmaUrl: string, userText: string, userMsg: Message) => {
+  const handleFigmaComponentRequest = async (
+    figmaUrl: string,
+    userText: string,
+    userMsg: Message
+  ) => {
     addMessage(userMsg);
-    setInput('');
+    setInput("");
     setIsSending(true);
 
     try {
       addMessage({
-        role: 'assistant',
-        content: '🎨 Figma 디자인에서 React 컴포넌트를 생성하고 있습니다...',
+        role: "assistant",
+        content: "🎨 Figma 디자인에서 React 컴포넌트를 생성하고 있습니다...",
       });
 
-      const response = await fetch(`http://localhost:8001/chat/convert/react-component`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          figma_url: figmaUrl,
-          output: `../backend/projects/${currentProject.name}/client/components/figma`,
-          embed_shapes: true,
-        }),
-      });
+      const response = await fetch(
+        `http://localhost:8001/chat/convert/react-component`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            figma_url: figmaUrl,
+            output: `../backend/projects/${currentProject.name}/client/components/figma`,
+            embed_shapes: true,
+          }),
+        }
+      );
 
       if (!response.ok) {
-        throw new Error(`컴포넌트 생성 실패: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `컴포넌트 생성 실패: ${response.status} ${response.statusText}`
+        );
       }
 
       const data = await response.json();
 
       if (data.success) {
         addMessage({
-          role: 'assistant',
+          role: "assistant",
           content: `✅ React 컴포넌트가 성공적으로 생성되었습니다!\n\n${data.message}`,
         });
       } else {
         addMessage({
-          role: 'error',
+          role: "error",
           content: `⚠️ 컴포넌트 생성 중 오류가 발생했습니다:\n${data.message}`,
         });
       }
     } catch (error: any) {
-      console.error('Figma component conversion error:', error);
+      console.error("Figma component conversion error:", error);
       addMessage({
-        role: 'error',
+        role: "error",
         content: `⚠️ 컴포넌트 생성 중 오류가 발생했습니다: ${error.message}`,
       });
     } finally {
@@ -457,51 +508,58 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
   };
 
   // Figma 페이지 생성 요청 처리
-  const handleFigmaPageRequest = async (figmaUrl: string, userText: string, userMsg: Message) => {
+  const handleFigmaPageRequest = async (
+    figmaUrl: string,
+    userText: string,
+    userMsg: Message
+  ) => {
     addMessage(userMsg);
-    setInput('');
+    setInput("");
     setIsSending(true);
 
     try {
       addMessage({
-        role: 'assistant',
-        content: '🎨 Figma 디자인에서 페이지를 생성하고 있습니다...',
+        role: "assistant",
+        content: "🎨 Figma 디자인에서 페이지를 생성하고 있습니다...",
       });
 
       const response = await fetch(`http://localhost:8001/chat/create-page`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           figma_url: figmaUrl,
-          output: `../backend/projects/${currentProject.name}/client/pages/`,
+          output: ``,
+          pages: `../backend/projects/${currentProject.name}/client/pages/`,
           components: `../backend/projects/${currentProject.name}/client/components/figma`,
           embed_shapes: true,
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`페이지 생성 실패: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `페이지 생성 실패: ${response.status} ${response.statusText}`
+        );
       }
 
       const data = await response.json();
 
       if (data.success) {
         addMessage({
-          role: 'assistant',
+          role: "assistant",
           content: `✅ 페이지가 성공적으로 생성되었습니다!\n\n${data.message}`,
         });
       } else {
         addMessage({
-          role: 'error',
+          role: "error",
           content: `⚠️ 페이지 생성 중 오류가 발생했습니다:\n${data.message}`,
         });
       }
     } catch (error: any) {
-      console.error('Figma page conversion error:', error);
+      console.error("Figma page conversion error:", error);
       addMessage({
-        role: 'error',
+        role: "error",
         content: `⚠️ 페이지 생성 중 오류가 발생했습니다: ${error.message}`,
       });
     } finally {
@@ -513,16 +571,19 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
   return (
     <div className="flex h-full flex-col min-h-0">
       {/* 메시지 목록 */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-5 min-h-0 scrollbar-hide">
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-5 min-h-0 scrollbar-hide"
+      >
         {messages.map((m, idx) => (
           <div
             key={idx}
             className={
-              m.role === 'user'
-                ? 'ml-auto max-w-[85%] rounded-lg bg-indigo-600/90 text-white px-3 py-2 break-words whitespace-pre-wrap'
-                : m.role === 'error'
-                ? 'mr-auto max-w-[85%] rounded-lg bg-red-500/10 text-red-200 px-3 py-2 border border-red-400/30 break-words whitespace-pre-wrap'
-                : 'mr-auto max-w-[85%] rounded-lg bg-white/5 text-slate-200 px-3 py-2 border border-white/10 break-words whitespace-pre-wrap'
+              m.role === "user"
+                ? "ml-auto max-w-[85%] rounded-lg bg-indigo-600/90 text-white px-3 py-2 break-words whitespace-pre-wrap"
+                : m.role === "error"
+                ? "mr-auto max-w-[85%] rounded-lg bg-red-500/10 text-red-200 px-3 py-2 border border-red-400/30 break-words whitespace-pre-wrap"
+                : "mr-auto max-w-[85%] rounded-lg bg-white/5 text-slate-200 px-3 py-2 border border-white/10 break-words whitespace-pre-wrap"
             }
           >
             {m.content}
@@ -551,13 +612,15 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
                 {a.previewUrl ? (
                   <img
                     src={a.previewUrl}
-                    alt={a.uploaded?.name || a.file?.name || 'attachment'}
+                    alt={a.uploaded?.name || a.file?.name || "attachment"}
                     className="w-12 h-12 object-cover rounded"
                   />
                 ) : (
                   <File size={16} />
                 )}
-                <div className="text-xs text-slate-300 max-w-[200px] truncate">{a.uploaded?.name || a.file?.name}</div>
+                <div className="text-xs text-slate-300 max-w-[200px] truncate">
+                  {a.uploaded?.name || a.file?.name}
+                </div>
                 <button
                   onClick={() => removeAttachment(a.id)}
                   className="ml-1 p-1 rounded hover:bg-white/10"
@@ -616,7 +679,7 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
                 autoSize();
               }}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
+                if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
                   sendMessage();
                 }
@@ -639,7 +702,7 @@ export const Chat: React.FC<ChatProps> = ({ selectedFilePath, fileContent, onFil
           </div>
           <div className="text-[11px] text-slate-400/80 mt-1 px-1">
             Enter 전송 · Shift+Enter 줄바꿈
-            {isUploading ? ' · 파일 업로드 중...' : ''}
+            {isUploading ? " · 파일 업로드 중..." : ""}
           </div>
           <input
             ref={fileInputRef}

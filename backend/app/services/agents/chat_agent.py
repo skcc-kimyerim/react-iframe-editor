@@ -23,11 +23,11 @@ class ChatAgent:
             # 사용자 메시지 구성 (텍스트 + 이미지)
             user_content = []
             
-            # 텍스트 메시지 추가
-            if user_input.strip():
+            # 텍스트 메시지 추가 (첨부파일이 있든 없든 사용자 질문이 있으면 추가)
+            if user_input and user_input.strip():
                 user_content.append({
                     "type": "text",
-                    "text": user_input
+                    "text": user_input.strip()
                 })
             
             # 첨부 파일 처리 (이미지는 base64로, 기타는 텍스트로)
@@ -37,8 +37,14 @@ class ChatAgent:
                     if processed:
                         user_content.append(processed)
             
-            # 기본 텍스트가 없고 첨부만 있는 경우
-            if not user_input.strip() and attachments:
+            # 아무 내용도 없는 경우 기본 메시지 추가
+            if not user_content:
+                user_content.append({
+                    "type": "text", 
+                    "text": "안녕하세요. 어떤 도움이 필요하신가요?"
+                })
+            # 첨부파일만 있고 텍스트가 없는 경우 분석 요청 메시지 추가
+            elif not user_input.strip() and attachments:
                 user_content.insert(0, {
                     "type": "text", 
                     "text": "첨부된 내용을 분석해주세요."
@@ -62,6 +68,15 @@ class ChatAgent:
             
             return content.strip() or "요청을 확인했습니다. 관련 코드를 점검하고 필요한 수정을 백그라운드에서 진행할게요."
             
+        except anthropic.BadRequestError as e:
+            logger.error(f"Claude API 잘못된 요청: {e}")
+            return "요청이 올바르지 않습니다. 메시지 내용을 확인해주세요."
+        except anthropic.AuthenticationError as e:
+            logger.error(f"Claude API 인증 실패: {e}")
+            return "API 키 인증에 실패했습니다."
+        except anthropic.RateLimitError as e:
+            logger.error(f"Claude API 요청 한도 초과: {e}")
+            return "요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요."
         except Exception as e:
             logger.exception("Claude API 요청 실패")
             return f"Claude API 요청 실패: {e}"

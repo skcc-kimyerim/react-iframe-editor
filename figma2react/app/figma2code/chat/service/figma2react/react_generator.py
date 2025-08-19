@@ -83,6 +83,7 @@ class ReactComponentGenerator:
 2. 모든 콘텐츠는 props를 통해서만 전달
 3. 기본값은 빈 배열([]) 또는 빈 문자열('') 사용
 4. TypeScript + tailwindcss 필수 사용
+5. classnames 사용 금지
 
 💡 최우선 설계 원칙:
 - 재사용성 최우선: 다양한 상황에서 사용할 수 있는 유연한 컴포넌트

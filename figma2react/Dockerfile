@@ -8,4 +8,4 @@ ADD . /app
 WORKDIR /app
 RUN uv sync --locked
 
-CMD ["/app/.venv/bin/fastapi", "run", "app/main.py", "--port", "8000", "--host", "0.0.0.0"]
+CMD ["/app/.venv/bin/fastapi", "run", "app/main.py", "--port", "8001", "--host", "0.0.0.0"]
