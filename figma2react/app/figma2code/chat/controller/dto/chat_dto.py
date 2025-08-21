@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Any
 
 
 @dataclass(frozen=True)
@@ -39,7 +39,7 @@ class FigmaConvertRequestDTO:
 @dataclass(frozen=True)
 class FigmaConvertResponseDTO:
     success: bool
-    message: str
+    message: Any
 
 
 @dataclass(frozen=True)
@@ -58,3 +58,11 @@ class FigmaCreatePageRequestDTO:
     token: Optional[str] = None
     components: Optional[str] = "output/frontend/components"
     embed_shapes: bool = True
+
+
+@dataclass(frozen=True)
+class FigmaComponentSimilarityRequestDTO:
+    figma_url: str
+    token: Optional[str] = None
+    embed_shapes: bool = True
+    guide_md_path: Optional[str] = "./output/frontend/COMPONENTS_GUIDE.md"

@@ -1,3 +1,4 @@
+import json
 from fastapi import APIRouter, Depends
 from figma2code.chat.controller.dto.chat_dto import (
     ChatMessageRequestDTO,
@@ -7,6 +8,7 @@ from figma2code.chat.controller.dto.chat_dto import (
     FigmaConvertResponseDTO,
     FigmaCreatePageRequestDTO,
     FigmaReactComponentRequestDTO,
+    FigmaComponentSimilarityRequestDTO,
 )
 from figma2code.chat.service.chat_service import ChatService, get_chat_service
 
@@ -40,6 +42,29 @@ async def convert_figma(
         embed_shapes=body.embed_shapes,
     )
     return FigmaConvertResponseDTO(success=success, message=message)
+
+
+@router.post("/convert/component-similarity", response_model=FigmaConvertResponseDTO)
+async def convert_component_similarity(
+    body: FigmaComponentSimilarityRequestDTO,
+    chat_service: ChatService = Depends(get_chat_service),
+) -> FigmaConvertResponseDTO:
+    success, message = await chat_service.component_similarity(
+        figma_url=body.figma_url,
+        token=body.token,
+        embed_shapes=body.embed_shapes,
+        guide_md_path=body.guide_md_path,
+    )
+    # message를 가능하면 파싱해서 JSON으로 반환
+    parsed = None
+    if isinstance(message, str):
+        try:
+            parsed = json.loads(message)
+        except Exception:
+            parsed = message
+    else:
+        parsed = message
+    return FigmaConvertResponseDTO(success=success, message=parsed)
 
 
 @router.post("/convert/react-component", response_model=FigmaConvertResponseDTO)
