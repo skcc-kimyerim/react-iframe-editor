@@ -114,7 +114,7 @@ class BatchProcessor:
                 nodes, key=lambda node: node.get("_original_order", float("inf"))
             )
             logging.debug(
-                f"[BATCH ORDER] Sorted nodes by original order for batch processing"
+                "[BATCH ORDER] Sorted nodes by original order for batch processing"
             )
 
         for node in nodes:

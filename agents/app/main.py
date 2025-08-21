@@ -5,7 +5,7 @@ from core.config import get_setting
 from core.db.database import close_db, init_db
 from core.log.logging import get_logging
 from fastapi import FastAPI
-from figma2code.web.router import router
+from web.router import router
 
 settings = get_setting()
 
@@ -26,8 +26,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 app = FastAPI(
-    title="GenAI Boilerplate",
-    description="GenAI Boilerplate",
+    title="Figma2Code",
+    description="Figma2Code",
     version="1.0.0",
     lifespan=lifespan,
 )

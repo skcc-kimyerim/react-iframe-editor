@@ -222,4 +222,4 @@ backend/venv
 backend/dynamic-react-app
 backend/output
 __pycache__
-/figma2react/output
+/agents/output

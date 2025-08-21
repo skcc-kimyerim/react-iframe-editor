@@ -3,32 +3,6 @@ from typing import Optional, Any
 
 
 @dataclass(frozen=True)
-class ChatRequestDTO:
-    chat_id: str
-    message: str
-
-
-@dataclass(frozen=True)
-class ChatResponseDTO:
-    id: str
-    title: str
-
-
-@dataclass(frozen=True)
-class ChatMessageResponseDTO:
-    id: str
-    chat_id: str
-    content: str
-
-
-@dataclass(frozen=True)
-class ChatMessageRequestDTO:
-    chat_id: str
-    user_id: str
-    message: str
-
-
-@dataclass(frozen=True)
 class FigmaConvertRequestDTO:
     figma_url: str
     output_dir: str = "output"

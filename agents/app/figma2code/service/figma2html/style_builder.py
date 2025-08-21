@@ -552,8 +552,8 @@ class CSSStyleBuilder:
             return ""
 
         # Calculate angle (simplified)
-        start = gradient_handles[0]
-        end = gradient_handles[1]
+        # start = gradient_handles[0]
+        # end = gradient_handles[1]
 
         # For simplicity, assume 0deg for now
         angle = "0deg"

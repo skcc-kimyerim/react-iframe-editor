@@ -1,39 +1,24 @@
 import json
 from fastapi import APIRouter, Depends
-from figma2code.chat.controller.dto.chat_dto import (
-    ChatMessageRequestDTO,
-    ChatMessageResponseDTO,
-    ChatRequestDTO,
+from figma2code.controller.dto.converter_dto import (
     FigmaConvertRequestDTO,
     FigmaConvertResponseDTO,
     FigmaCreatePageRequestDTO,
     FigmaReactComponentRequestDTO,
     FigmaComponentSimilarityRequestDTO,
 )
-from figma2code.chat.service.chat_service import ChatService, get_chat_service
+from figma2code.service.converter_service import (
+    ConverterService,
+    get_converter_service,
+)
 
-router = APIRouter(prefix="/chat", tags=["chat"])
-
-
-@router.post("/completions/stream", response_model=ChatMessageResponseDTO)
-async def chat_stream(
-    request: ChatRequestDTO,
-    chat_service: ChatService = Depends(get_chat_service),
-) -> ChatMessageResponseDTO:
-    """채팅 스트림 엔드포인트"""
-    return await chat_service.process_chat_message(
-        ChatMessageRequestDTO(
-            chat_id=request.chat_id,
-            user_id="1234",
-            message=request.message,
-        )
-    )
+router = APIRouter(prefix="/converter", tags=["converter"])
 
 
 @router.post("/convert", response_model=FigmaConvertResponseDTO)
 async def convert_figma(
     body: FigmaConvertRequestDTO,
-    chat_service: ChatService = Depends(get_chat_service),
+    chat_service: ConverterService = Depends(get_converter_service),
 ) -> FigmaConvertResponseDTO:
     success, message = await chat_service.convert(
         figma_url=body.figma_url,
@@ -47,7 +32,7 @@ async def convert_figma(
 @router.post("/convert/component-similarity", response_model=FigmaConvertResponseDTO)
 async def convert_component_similarity(
     body: FigmaComponentSimilarityRequestDTO,
-    chat_service: ChatService = Depends(get_chat_service),
+    chat_service: ConverterService = Depends(get_converter_service),
 ) -> FigmaConvertResponseDTO:
     success, message = await chat_service.component_similarity(
         figma_url=body.figma_url,
@@ -70,7 +55,7 @@ async def convert_component_similarity(
 @router.post("/convert/react-component", response_model=FigmaConvertResponseDTO)
 async def convert_react_component(
     body: FigmaReactComponentRequestDTO,
-    chat_service: ChatService = Depends(get_chat_service),
+    chat_service: ConverterService = Depends(get_converter_service),
 ) -> FigmaConvertResponseDTO:
     success, message = await chat_service.convert_react_component(
         figma_url=body.figma_url,
@@ -84,7 +69,7 @@ async def convert_react_component(
 @router.post("/create-page", response_model=FigmaConvertResponseDTO)
 async def create_page(
     body: FigmaCreatePageRequestDTO,
-    chat_service: ChatService = Depends(get_chat_service),
+    chat_service: ConverterService = Depends(get_converter_service),
 ) -> FigmaConvertResponseDTO:
     success, message = await chat_service.create_page(
         figma_url=body.figma_url,

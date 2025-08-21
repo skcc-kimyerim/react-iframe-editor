@@ -1,22 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Tuple
 
-from figma2code.chat.controller.dto.chat_dto import (
-    ChatMessageRequestDTO,
-    ChatMessageResponseDTO,
-)
 
-
-class ChatServiceABC(ABC):
+class ConverterServiceABC(ABC):
     @abstractmethod
     def __init__(self):
-        pass
-
-    @abstractmethod
-    async def process_chat_message(
-        self,
-        command: ChatMessageRequestDTO,
-    ) -> ChatMessageResponseDTO:
         pass
 
     @abstractmethod

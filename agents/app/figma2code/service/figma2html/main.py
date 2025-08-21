@@ -448,7 +448,7 @@ def benchmark(figma_url: Optional[str], token: Optional[str]) -> None:
         processed_nodes, stats = converter.json_converter.nodes_to_json(raw_nodes)
         conversion_time = time.time() - start_time
         start_time = time.time()
-        result = converter.html_generator.html_main(processed_nodes)
+        # result = converter.html_generator.html_main(processed_nodes)
         generation_time = time.time() - start_time
         logging.info(f"{Fore.GREEN}📊 성능 결과:{Style.RESET_ALL}")
         logging.info(f"   API 가져오기: {api_time:.2f}초")

@@ -136,7 +136,7 @@ class SVGRenderer:
                 nodes, key=lambda node: node.get("_original_order", float("inf"))
             )
             logging.debug(
-                f"[SVG ORDER] Sorted nodes by original order for SVG processing"
+                "[SVG ORDER] Sorted nodes by original order for SVG processing"
             )
 
         for node in nodes:
@@ -180,20 +180,20 @@ class SVGRenderer:
             # fallback: placeholder SVG
             width = node.get("width", 24)
             height = node.get("height", 24)
-            name = node.get("name", "icon")
-            placeholder_svg = f'''<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}" fill="none" xmlns="http://www.w3.org/2000/svg">
+            # name = node.get("name", "icon")
+            placeholder_svg = f"""<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}" fill="none" xmlns="http://www.w3.org/2000/svg">
 <rect width="{width}" height="{height}" fill="#F3F4F6"/>
 <path d="M8 8L16 16M16 8L8 16" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round"/>
-</svg>'''
+</svg>"""
             return placeholder_svg
         except Exception as e:
             logging.error(f"Error exporting SVG: {str(e)}")
             width = node.get("width", 24)
             height = node.get("height", 24)
-            placeholder_svg = f'''<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}" fill="none" xmlns="http://www.w3.org/2000/svg">
+            placeholder_svg = f"""<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}" fill="none" xmlns="http://www.w3.org/2000/svg">
 <rect width="{width}" height="{height}" fill="#F3F4F6"/>
 <path d="M8 8L16 16M16 8L8 16" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round"/>
-</svg>'''
+</svg>"""
             return placeholder_svg
 
     def _adjust_svg_size(self, svg_content: str, node: Dict[str, Any]) -> str:

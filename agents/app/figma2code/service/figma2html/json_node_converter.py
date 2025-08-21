@@ -82,7 +82,7 @@ class JsonNodeConverter:
     def _prepare_node_for_processing(self, node: Dict[str, Any]) -> Dict[str, Any]:
         """처리를 위한 노드 준비"""
         node_doc = node.copy()
-        node_cumulative_rotation = 0
+        # node_cumulative_rotation = 0
 
         # GROUP을 FRAME으로 변환
         if node.get("type") == "GROUP":
@@ -90,7 +90,7 @@ class JsonNodeConverter:
 
             # 자식에 대한 회전 처리
             if "rotation" in node_doc and node_doc["rotation"]:
-                node_cumulative_rotation = -node_doc["rotation"] * (180 / math.pi)
+                # node_cumulative_rotation = -node_doc["rotation"] * (180 / math.pi)
                 node_doc["rotation"] = 0
 
         return node_doc

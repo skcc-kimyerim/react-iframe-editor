@@ -1,99 +1,33 @@
-import logging
 import json
+import logging
 import os
 import re
-import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
-from core.ai.azure_llm import AzureLLM
 from core.config import get_setting
-from core.db.database_transaction import transactional
-from fastapi import Depends
-from figma2code.chat.controller.dto.chat_dto import (
-    ChatMessageRequestDTO,
-    ChatMessageResponseDTO,
+from figma2code.service.converter_service_abc import ConverterServiceABC
+from figma2code.service.figma2html.figma_api_client import FigmaApiClient
+from figma2code.service.figma2html.figma_url_parser import parse_figma_url
+from figma2code.service.figma2html.html_generator import HtmlGenerator
+from figma2code.service.figma2html.json_node_converter import (
+    JsonNodeConverter,
 )
-from figma2code.chat.domain.chat import Chat
-from figma2code.chat.domain.chat_message import ChatMessage
-from figma2code.chat.repository.chat_message_repository import (
-    ChatMessageRepository,
-    get_chat_message_repository,
-)
-from figma2code.chat.repository.chat_repository import (
-    ChatRepository,
-    get_chat_repository,
-)
-from figma2code.chat.service.chat_service_abc import ChatServiceABC
-from figma2code.chat.service.figma2html.figma_api_client import FigmaApiClient
-from figma2code.chat.service.figma2html.figma_url_parser import parse_figma_url
-from figma2code.chat.service.figma2html.html_generator import HtmlGenerator
-from figma2code.chat.service.figma2html.json_node_converter import JsonNodeConverter
-from figma2code.chat.service.figma2html.utils import (
+from figma2code.service.figma2html.utils import (
     get_best_frame_from_page,
     inject_metadata,
     sanitize_filename,
 )
-from figma2code.chat.service.figma2react.page_generator import make_filename
-from figma2code.chat.service.figma2react.react_generator import (
+from figma2code.service.figma2react.page_generator import make_filename
+from figma2code.service.figma2react.react_generator import (
     ReactComponentGenerator,
 )
-from openai.types.chat.chat_completion import ChatCompletion
 
 settings = get_setting()
 
 
-class ChatService(ChatServiceABC):
-    def __init__(
-        self,
-        chat_repository: ChatRepository,
-        chat_message_repository: ChatMessageRepository,
-    ):
-        self.chat_repository = chat_repository
-        self.chat_message_repository = chat_message_repository
-
-    @transactional
-    async def process_chat_message(
-        self,
-        command: ChatMessageRequestDTO,
-    ) -> ChatMessageResponseDTO:
-        chat: Chat = await self.chat_repository.get_or_create_chat(
-            Chat(
-                id=command.chat_id,
-                user_id=command.user_id,
-                title=command.message,
-            )
-        )
-
-        # llm 호출
-        llm: AzureLLM = AzureLLM(
-            api_key=settings.OPENAI_API_KEY,
-            base_url=settings.OPENAI_BASE_URL,
-            deployment=settings.OPENAI_DEPLOYMENT,
-            api_version=settings.OPENAI_API_VERSION,
-        )
-
-        completion: ChatCompletion = llm.generate_text(
-            model=settings.OPENAI_MODEL,
-            query=command.message,
-        )
-
-        chat_message: ChatMessage = (
-            await self.chat_message_repository.create_chat_message(
-                ChatMessage(
-                    id=str(uuid.uuid4()),
-                    chat_id=chat.id,
-                    role="user",
-                    type="text",
-                    content=completion.choices[0].message.content,
-                )
-            )
-        )
-
-        return ChatMessageResponseDTO(
-            id=chat_message.id,
-            chat_id=chat_message.chat_id,
-            content=chat_message.content,
-        )
+class ConverterService(ConverterServiceABC):
+    def __init__(self):
+        pass
 
     async def convert(
         self,
@@ -718,12 +652,3 @@ class ChatService(ChatServiceABC):
             "</body>\n"
             "</html>"
         )
-
-
-def get_chat_service(
-    chat_repository: ChatRepository = Depends(get_chat_repository),
-    chat_message_repository: ChatMessageRepository = Depends(
-        get_chat_message_repository
-    ),
-) -> ChatService:
-    return ChatService(chat_repository, chat_message_repository)

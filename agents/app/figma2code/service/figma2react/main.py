@@ -17,11 +17,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import logging
 
-from figma2code.chat.service.figma2html.figma_api_client import FigmaApiClient
-from figma2code.chat.service.figma2html.figma_url_parser import parse_figma_url
-from figma2code.chat.service.figma2html.html_generator import HtmlGenerator
-from figma2code.chat.service.figma2html.json_node_converter import JsonNodeConverter
-from figma2code.chat.service.figma2html.utils import (
+from figma2code.service.figma2html.figma_api_client import FigmaApiClient
+from figma2code.service.figma2html.figma_url_parser import parse_figma_url
+from figma2code.service.figma2html.html_generator import HtmlGenerator
+from figma2code.service.figma2html.json_node_converter import JsonNodeConverter
+from figma2code.service.figma2html.utils import (
     get_best_frame_from_page,
     inject_metadata,
     sanitize_filename,
@@ -523,7 +523,7 @@ def convert_react_selection(
             logging.info(
                 f"   import {{ ComponentName }} from './{output}/ComponentName';"
             )
-            logging.info(f"   <ComponentName />")
+            logging.info("   <ComponentName />")
 
     except ValueError as e:
         print(f"{Fore.RED}❌ 설정 오류: {e}{Style.RESET_ALL}")
@@ -606,7 +606,7 @@ def benchmark(figma_url: str, token: Optional[str]) -> None:
         processed_nodes, stats = converter.json_converter.nodes_to_json(raw_nodes)
         conversion_time = time.time() - start_time
         start_time = time.time()
-        result = converter.html_generator.html_main(processed_nodes)
+        # result = converter.html_generator.html_main(processed_nodes)
         generation_time = time.time() - start_time
         logging.info(f"{Fore.GREEN}📊 성능 결과:{Style.RESET_ALL}")
         logging.info(f"   API 가져오기: {api_time:.2f}초")
@@ -725,7 +725,7 @@ def _extract_all_nodes_from_selection(
         is_nested_component: bool = False,
     ) -> None:
         node_type = node.get("type")
-        node_name = node.get("name", "")
+        # node_name = node.get("name", "")
 
         # 노드 타입 및 이름 기반 필터링
         if filter_components:
