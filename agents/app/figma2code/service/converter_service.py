@@ -652,3 +652,8 @@ class ConverterService(ConverterServiceABC):
             "</body>\n"
             "</html>"
         )
+
+
+# FastAPI Depends 용 DI 팩토리
+def get_converter_service() -> ConverterService:
+    return ConverterService()

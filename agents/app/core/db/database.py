@@ -2,12 +2,9 @@
 from core.config import get_setting
 from core.db.connection import engine
 from core.db.model.base import Base
-from figma2code.chat.domain.chat import Chat
-from figma2code.chat.domain.chat_message import ChatMessage
-from figma2code.user.domain.user import User
 
 # 모델이 추가되면 아래에 추가
-_models = [Chat, ChatMessage, User]
+_models = []
 
 
 settings = get_setting()
