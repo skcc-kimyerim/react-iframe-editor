@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Terminal, ChevronDown, ChevronRight } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Terminal } from "lucide-react";
 
 type Props = {
   devServerUrl: string;

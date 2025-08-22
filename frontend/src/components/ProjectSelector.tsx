@@ -11,7 +11,6 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
 }) => {
   const [newProjectName, setNewProjectName] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [projectType, setProjectType] = useState<"figma" | "basic">("basic");
   const [deletingProject, setDeletingProject] = useState<string | null>(null);
 
   const {
@@ -33,10 +32,9 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
       return;
     }
 
-    createProject(trimmedName, projectType);
+    createProject(trimmedName);
     setNewProjectName("");
     setShowCreateForm(false);
-    setProjectType("basic"); // 리셋
     onProjectSelected();
   };
 
@@ -59,7 +57,6 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
     try {
       setDeletingProject(name);
       await deleteProject(name);
-      // 삭제 성공 시 특별한 처리 필요 없음 (스토어에서 자동 업데이트)
     } catch (error) {
       console.error("프로젝트 삭제 실패:", error);
       alert(
@@ -102,79 +99,22 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
           </button>
         ) : (
           <div className="space-y-3">
-            {/* 프로젝트 이름과 타입을 한 줄에 */}
             <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <div className="flex-1">
-                  <input
-                    type="text"
-                    placeholder="프로젝트 이름을 입력하세요"
-                    value={newProjectName}
-                    onChange={(e) => setNewProjectName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleCreateProject();
-                      if (e.key === "Escape") {
-                        setShowCreateForm(false);
-                        setNewProjectName("");
-                        setProjectType("basic");
-                      }
-                    }}
-                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-indigo-400"
-                    autoFocus
-                  />
-                </div>
-
-                {/* 프로젝트 타입 스위치 */}
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`text-xs font-medium transition-colors ${
-                      projectType === "basic" ? "text-white" : "text-white/50"
-                    }`}
-                  >
-                    Basic
-                  </span>
-
-                  {/* 토글 스위치 */}
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setProjectType(
-                        projectType === "basic" ? "figma" : "basic"
-                      )
-                    }
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800 ${
-                      projectType === "figma" ? "bg-indigo-600" : "bg-white/20"
-                    }`}
-                    title={
-                      projectType === "basic"
-                        ? "Basic 프로젝트"
-                        : "Figma 프로젝트"
-                    }
-                  >
-                    <span
-                      className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                        projectType === "figma"
-                          ? "translate-x-5"
-                          : "translate-x-1"
-                      }`}
-                    />
-                  </button>
-
-                  <span
-                    className={`text-xs font-medium transition-colors ${
-                      projectType === "figma" ? "text-white" : "text-white/50"
-                    }`}
-                  >
-                    Figma
-                  </span>
-                </div>
-              </div>
-
-              <p className="text-xs text-white/50 px-1">
-                {projectType === "basic"
-                  ? "React 기본 템플릿으로 프로젝트를 시작합니다."
-                  : "Figma 디자인을 React 코드로 변환할 수 있습니다."}
-              </p>
+              <input
+                type="text"
+                placeholder="프로젝트 이름을 입력하세요"
+                value={newProjectName}
+                onChange={(e) => setNewProjectName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleCreateProject();
+                  if (e.key === "Escape") {
+                    setShowCreateForm(false);
+                    setNewProjectName("");
+                  }
+                }}
+                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-indigo-400"
+                autoFocus
+              />
             </div>
 
             <div className="flex gap-2">
@@ -189,7 +129,6 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
                 onClick={() => {
                   setShowCreateForm(false);
                   setNewProjectName("");
-                  setProjectType("basic");
                 }}
                 className="flex-1 px-3 py-1.5 bg-white/10 text-white rounded-md text-sm font-medium hover:bg-white/20"
               >

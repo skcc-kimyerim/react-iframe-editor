@@ -308,10 +308,10 @@ export const Chat: React.FC<ChatProps> = ({
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
           messages: [...messagesToSend, userMsg],
-          selectedFile: selectedFilePath,
-          fileContent: fileContent,
+          selected_file: selectedFilePath,
+          file_content: fileContent,
           attachments: attsForChat,
-          projectName: currentProject.name,
+          project_name: currentProject.name,
         }),
       });
 

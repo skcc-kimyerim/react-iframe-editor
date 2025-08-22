@@ -139,9 +139,9 @@ const ReactEditor = () => {
     try {
       const projectName = currentProject?.name || "default-project";
       const data = await apiCall(
-        `/file?relativePath=${encodeURIComponent(
+        `/file?relative_path=${encodeURIComponent(
           "client/App.tsx"
-        )}&projectName=${encodeURIComponent(projectName)}`
+        )}&project_name=${encodeURIComponent(projectName)}`
       );
       const content: string = data.content ?? "";
       const routes: string[] = [];
@@ -173,13 +173,13 @@ const ReactEditor = () => {
     await apiCall("/init-project", {
       method: "POST",
       body: JSON.stringify({
-        componentCode: code,
+        component_code: code,
         dependencies: {},
         project_name: currentProject.name,
         description: `${currentProject.name} 프로젝트`,
         app_name: currentProject.name.replace(/\s+/g, "-").toLowerCase(),
         title: currentProject.name,
-        projectType: currentProject?.projectType || "basic",
+        project_type: currentProject?.projectType || "basic",
       }),
     });
     console.log("Project initialized successfully");
@@ -193,7 +193,7 @@ const ReactEditor = () => {
     const data = await apiCall("/start-dev-server", {
       method: "POST",
       body: JSON.stringify({
-        projectName: currentProject?.name || "default-project",
+        project_name: currentProject?.name || "default-project",
       }),
     });
 
@@ -218,7 +218,7 @@ const ReactEditor = () => {
       await apiCall("/stop-dev-server", {
         method: "POST",
         body: JSON.stringify({
-          projectName: currentProject?.name || "default-project",
+          project_name: currentProject?.name || "default-project",
         }),
       });
       setServerRunning(false);
@@ -256,7 +256,7 @@ const ReactEditor = () => {
       setLoadingFiles(true);
       const projectName = currentProject?.name || "default-project";
       const data = await apiCall(
-        `/files?projectName=${encodeURIComponent(projectName)}`
+        `/files?project_name=${encodeURIComponent(projectName)}`
       );
       console.log(data);
       setFileTree(data.tree || []);
@@ -274,7 +274,7 @@ const ReactEditor = () => {
     try {
       const projectName = currentProject?.name || "default-project";
       const data = await apiCall(
-        `/files?projectName=${encodeURIComponent(projectName)}`
+        `/files?project_name=${encodeURIComponent(projectName)}`
       );
       const newTree = data.tree || [];
       // 내용이 동일하면 상태 업데이트 생략하여 리렌더/깜박임 방지
@@ -294,9 +294,9 @@ const ReactEditor = () => {
       setLoadingFileContent(true);
       const projectName = currentProject?.name || "default-project";
       const data = await apiCall(
-        `/file?relativePath=${encodeURIComponent(
+        `/file?relative_path=${encodeURIComponent(
           relativePath
-        )}&projectName=${encodeURIComponent(projectName)}`
+        )}&project_name=${encodeURIComponent(projectName)}`
       );
       setSelectedFile(relativePath, data.content ?? "");
       // 방금 불러온 내용은 디스크와 동기화된 상태로 간주하여 즉시 저장 트리거를 방지
@@ -320,9 +320,9 @@ const ReactEditor = () => {
       await apiCall("/file", {
         method: "PUT",
         body: JSON.stringify({
-          relativePath: selectedFilePath,
+          relative_path: selectedFilePath,
           content: code,
-          projectName: currentProject?.name || "default-project",
+          project_name: currentProject?.name || "default-project",
         }),
       });
       console.log("Component updated successfully");
@@ -368,9 +368,9 @@ const ReactEditor = () => {
       await apiCall("/file", {
         method: "PUT",
         body: JSON.stringify({
-          relativePath: filePath,
+          relative_path: filePath,
           content: newContent,
-          projectName: currentProject?.name || "default-project",
+          project_name: currentProject?.name || "default-project",
         }),
       });
 

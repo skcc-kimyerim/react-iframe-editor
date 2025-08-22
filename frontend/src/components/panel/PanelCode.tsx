@@ -29,7 +29,7 @@ export const PanelCode: React.FC<Props> = ({
   setCode,
   configureMonaco,
 }) => {
-  // 파일 트리 자동 새로고침 (조용히, 7초 간격)
+  // 파일 트리 자동 새로고침 (7초 간격)
   useEffect(() => {
     let stopped = false;
     let timerId: number | undefined;
