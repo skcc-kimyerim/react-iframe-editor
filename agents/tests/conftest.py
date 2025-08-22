@@ -1,29 +1,25 @@
-from typing import List
-
+import os
+import sys
+from pathlib import Path
+import logging
 import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from web.router import router
 
 
-@pytest.fixture(scope="session")
-def client() -> TestClient:
-    # main.py는 DB 초기화(import 시 모델 누락)로 실패할 수 있으므로 라우터만 직접 마운트
-    test_app = FastAPI()
-    test_app.include_router(router)
-    return TestClient(test_app)
+@pytest.fixture(autouse=True, scope="session")
+def _set_test_env() -> None:
+    os.environ.setdefault("FIGMA_API_TOKEN", "test-token")
+    # Ensure app/ is on sys.path for module imports like `figma2code.*`
+    root = Path(__file__).resolve().parents[1]
+    app_dir = root / "app"
+    if str(app_dir) not in sys.path:
+        sys.path.insert(0, str(app_dir))
 
 
-class MockChatCompletionMessage:
-    def __init__(self, content: str):
-        self.content = content
+@pytest.fixture(autouse=True)
+def _silence_logging() -> None:
+    logging.getLogger().setLevel(logging.WARNING)
 
 
-class MockChatCompletionChoice:
-    def __init__(self, message: MockChatCompletionMessage):
-        self.message = message
-
-
-class MockChatCompletion:
-    def __init__(self, choices: List[MockChatCompletionChoice]):
-        self.choices = choices
+@pytest.fixture
+def fake_figma_url() -> str:
+    return "https://www.figma.com/design/abcd/Example?node-id=1-2"
