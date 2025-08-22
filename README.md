@@ -58,6 +58,7 @@ CORS_ALLOW_ORIGINS=["*"]
 ```bash
 # 백엔드 API 서버 주소 (Vite에서는 VITE_ 접두어 필요)
 VITE_REACT_APP_API_URL=http://localhost:3001
+FIGMA_API_TOKEN=your_figma_api_token
 ```
 
 > **참고**: Vite는 `VITE_` 접두어가 있는 환경 변수만 클라이언트 측에서 접근할 수 있습니다.
