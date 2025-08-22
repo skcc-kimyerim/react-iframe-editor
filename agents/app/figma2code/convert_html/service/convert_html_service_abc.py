@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Optional, Tuple
 
 
-class ConverterServiceABC(ABC):
+class ConvertHtmlServiceABC(ABC):
     @abstractmethod
     def __init__(self):
         pass
@@ -26,33 +26,5 @@ class ConverterServiceABC(ABC):
 
         Returns:
             (성공 여부, 메시지 또는 출력 경로)
-        """
-        pass
-
-    @abstractmethod
-    async def convert_react_component(
-        self,
-        figma_url: str,
-        output: str = "output/frontend/components",
-        token: Optional[str] = None,
-        embed_shapes: bool = True,
-    ) -> Tuple[bool, str]:
-        """
-        Figma 노드 1개를 React TSX 컴포넌트로 변환하여 저장합니다.
-        """
-        pass
-
-    @abstractmethod
-    async def create_page(
-        self,
-        figma_url: str,
-        output: str = "output",
-        pages: Optional[str] = None,
-        token: Optional[str] = None,
-        components: Optional[str] = None,
-        embed_shapes: bool = True,
-    ) -> Tuple[bool, str]:
-        """
-        HTML/CSS 생성 후 LLM으로 TSX 페이지를 생성하여 저장합니다.
         """
         pass

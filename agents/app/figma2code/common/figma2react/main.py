@@ -17,11 +17,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import logging
 
-from figma2code.service.figma2html.figma_api_client import FigmaApiClient
-from figma2code.service.figma2html.figma_url_parser import parse_figma_url
-from figma2code.service.figma2html.html_generator import HtmlGenerator
-from figma2code.service.figma2html.json_node_converter import JsonNodeConverter
-from figma2code.service.figma2html.utils import (
+from figma2code.common.figma2html.figma_api_client import FigmaApiClient
+from figma2code.common.figma2html.figma_url_parser import parse_figma_url
+from figma2code.common.figma2html.html_generator import HtmlGenerator
+from figma2code.common.figma2html.json_node_converter import JsonNodeConverter
+from figma2code.common.figma2html.utils import (
     get_best_frame_from_page,
     inject_metadata,
     sanitize_filename,

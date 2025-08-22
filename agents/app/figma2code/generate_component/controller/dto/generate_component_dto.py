@@ -3,14 +3,6 @@ from typing import Optional, Any
 
 
 @dataclass(frozen=True)
-class FigmaConvertRequestDTO:
-    figma_url: str
-    output_dir: str = "output"
-    token: Optional[str] = None
-    embed_shapes: bool = True
-
-
-@dataclass(frozen=True)
 class FigmaConvertResponseDTO:
     success: bool
     message: Any
@@ -21,16 +13,6 @@ class FigmaReactComponentRequestDTO:
     figma_url: str
     output: str = "output/frontend/components"
     token: Optional[str] = None
-    embed_shapes: bool = True
-
-
-@dataclass(frozen=True)
-class FigmaCreatePageRequestDTO:
-    figma_url: str
-    output: str = "output"
-    pages: Optional[str] = "output/frontend"
-    token: Optional[str] = None
-    components: Optional[str] = "output/frontend/components"
     embed_shapes: bool = True
 
 

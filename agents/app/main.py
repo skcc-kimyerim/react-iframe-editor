@@ -5,7 +5,10 @@ from core.config import get_setting
 from core.db.database import close_db, init_db
 from core.log.logging import get_logging
 from fastapi import FastAPI
-from web.router import router
+
+from figma2code.convert_html.web.router import router as convert_html_router
+from figma2code.generate_page.web.router import router as generate_page_router
+from figma2code.generate_component.web.router import router as generate_component_router
 
 settings = get_setting()
 
@@ -33,7 +36,9 @@ app = FastAPI(
 )
 
 # 라우터 등록
-app.include_router(router)
+app.include_router(convert_html_router)
+app.include_router(generate_page_router)
+app.include_router(generate_component_router)
 
 
 if __name__ == "__main__":
