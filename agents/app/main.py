@@ -5,6 +5,7 @@ from core.config import get_setting
 from core.db.database import close_db, init_db
 from core.log.logging import get_logging
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from figma2code.convert_html.web.router import router as convert_html_router
 from figma2code.generate_page.web.router import router as generate_page_router
@@ -33,6 +34,15 @@ app = FastAPI(
     description="Figma2Code",
     version="1.0.0",
     lifespan=lifespan,
+)
+
+# CORS 미들웨어 등록
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ALLOW_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # 라우터 등록

@@ -57,6 +57,9 @@ class Settings(BaseSettings):
     O3_MINI_DEPLOYMENT_NAME: str = ""
     OPENROUTER_API_KEY: str = ""
 
+    # CORS 설정
+    CORS_ALLOW_ORIGINS: list[str] = ["*"]
+
 
 settings = Settings()
 
