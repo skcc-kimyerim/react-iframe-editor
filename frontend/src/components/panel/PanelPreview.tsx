@@ -37,7 +37,7 @@ export const PanelPreview: React.FC<Props> = ({
       (import.meta as any).env?.VITE_REACT_APP_API_URL ||
       window.location.origin;
     const WS_URL =
-      String(API_HTTP).replace(/^http/i, "ws") + "/api/dev-server/logs";
+      String(API_HTTP).replace(/^http/i, "ws") + "/ui-code/dev-server/logs";
 
     try {
       const ws = new WebSocket(WS_URL);

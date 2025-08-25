@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { File, Paperclip, Send, Trash2, X } from "lucide-react";
 import { useProjectStore, Message } from "../stores/projectStore";
 
-const API_BASE = (import.meta as any).env.VITE_REACT_APP_API_URL + "/api";
+const API_BASE = (import.meta as any).env.VITE_REACT_APP_API_URL + "/ui-code";
 
 interface ChatProps {
   selectedFilePath?: string;
@@ -77,8 +77,11 @@ export const Chat: React.FC<ChatProps> = ({
     setAttachments((prev) => [...prev, ...next]);
     // reset input to allow re-selecting same file
 
-    // parse file content
-    parseAndAddToChat(files[0]);
+    // parse file content for non-image files only
+    const nonImageFiles = files.filter((f) => !f.type.startsWith("image/"));
+    if (nonImageFiles.length > 0) {
+      parseAndAddToChat(nonImageFiles[0]);
+    }
 
     e.currentTarget.value = "";
   };
@@ -370,64 +373,64 @@ export const Chat: React.FC<ChatProps> = ({
         data?.content || "죄송합니다, 응답을 생성하지 못했습니다.";
 
       // 파일 업데이트가 있으면 콜백 호출
-      if (data?.updatedFile && data?.updatedContent && onFileUpdate) {
-        onFileUpdate(data.updatedFile, data.updatedContent);
+      if (data?.updated_file && data?.updated_content && onFileUpdate) {
+        onFileUpdate(data.updated_file, data.updated_content);
       }
 
       // code_edit는 초기 짧은 응답을 표시하지 않고, 이후 폴링된 display만 보여줍니다.
-      if (data?.processingType !== "code_edit") {
+      if (data?.processing_type) {
         addMessage({ role: "assistant", content });
       }
 
-      // 백그라운드 코드 편집 작업만 폴링 (분석은 파일 변경이 없음)
-      if (data?.processingType === "code_edit" && data?.jobId) {
-        const jobId: string = data.jobId;
+      // // 백그라운드 코드 편집 작업만 폴링 (분석은 파일 변경이 없음)
+      // if (data?.processing_type === "code_edit" && data?.job_id) {
+      //   const jobId: string = data.job_id;
 
-        const pollJob = async () => {
-          try {
-            for (let i = 0; i < 60; i++) {
-              const jr = await fetch(`${API_BASE}/chat/jobs/${jobId}`);
-              if (!jr.ok) break;
-              const jd = await jr.json();
-              const status: string = jd?.status || "unknown";
+      //   const pollJob = async () => {
+      //     try {
+      //       for (let i = 0; i < 60; i++) {
+      //         const jr = await fetch(`${API_BASE}/chat/jobs/${jobId}`);
+      //         if (!jr.ok) break;
+      //         const jd = await jr.json();
+      //         const status: string = jd?.status || "unknown";
 
-              if (status === "done") {
-                if (jd?.display) {
-                  addMessage({
-                    role: "assistant",
-                    content: jd.display as string,
-                  });
-                }
-                if (onFileUpdate && jd?.updatedFile && jd?.updatedContent) {
-                  onFileUpdate(
-                    jd.updatedFile as string,
-                    jd.updatedContent as string
-                  );
-                }
-                return;
-              }
-              if (status === "error") {
-                const errMsg = (
-                  jd?.error ||
-                  jd?.message ||
-                  "작업 중 오류가 발생했습니다."
-                ).toString();
-                addMessage({ role: "error", content: `⚠️ ${errMsg}` });
-                return;
-              }
-              await new Promise((r) => setTimeout(r, 1500));
-            }
-          } catch (e: any) {
-            const m = (
-              e?.message || "작업 상태 조회 중 오류가 발생했습니다."
-            ).toString();
-            addMessage({ role: "error", content: `⚠️ ${m}` });
-          }
-        };
+      //         if (status === "done") {
+      //           if (jd?.display) {
+      //             addMessage({
+      //               role: "assistant",
+      //               content: jd.display as string,
+      //             });
+      //           }
+      //           if (onFileUpdate && jd?.updated_file && jd?.updated_content) {
+      //             onFileUpdate(
+      //               jd.updated_file as string,
+      //               jd.updated_content as string
+      //             );
+      //           }
+      //           return;
+      //         }
+      //         if (status === "error") {
+      //           const errMsg = (
+      //             jd?.error ||
+      //             jd?.message ||
+      //             "작업 중 오류가 발생했습니다."
+      //           ).toString();
+      //           addMessage({ role: "error", content: `⚠️ ${errMsg}` });
+      //           return;
+      //         }
+      //         await new Promise((r) => setTimeout(r, 1500));
+      //       }
+      //     } catch (e: any) {
+      //       const m = (
+      //         e?.message || "작업 상태 조회 중 오류가 발생했습니다."
+      //       ).toString();
+      //       addMessage({ role: "error", content: `⚠️ ${m}` });
+      //     }
+      //   };
 
-        // 폴링 시작 (비차단)
-        pollJob();
-      }
+      //   // 폴링 시작 (비차단)
+      //   pollJob();
+      // }
     } catch (e: any) {
       console.error(e);
       const message = (() => {

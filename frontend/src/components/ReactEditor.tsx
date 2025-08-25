@@ -66,7 +66,7 @@ const ReactEditor = () => {
   // 프로젝트가 없으면 프로젝트 선택 화면 표시
   const showProjectSelector = !currentProject;
 
-  const API_BASE = (import.meta as any).env.VITE_REACT_APP_API_URL + "/api";
+  const API_BASE = (import.meta as any).env.VITE_REACT_APP_API_URL + "/ui-code";
   // routePath가 변경되면 입력값 동기화
   useEffect(() => {
     setRouteInput(routePath || "/");
@@ -197,17 +197,17 @@ const ReactEditor = () => {
       }),
     });
 
-    updateDevServerUrl(data.devServerUrl);
+    updateDevServerUrl(data.dev_server_url);
     setServerRunning(true);
 
     // iframe 로드를 위한 딜레이
     setTimeout(() => {
       if (iframeRef.current) {
-        iframeRef.current.src = buildPreviewUrl(data.devServerUrl, routePath);
+        iframeRef.current.src = buildPreviewUrl(data.dev_server_url, routePath);
       }
     }, 3000);
 
-    console.log("Development server started:", data.devServerUrl);
+    console.log("Development server started:", data.dev_server_url);
     await fetchFileTree();
     await fetchAvailableRoutes();
   };
